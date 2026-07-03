@@ -162,7 +162,7 @@ Para deixar claro o escopo atual e evitar assumir funcionalidades que não foram
 - Sem multi-usuário compartilhado / biblioteca em grupo / papéis (admin vs. operador) — é 100% dados isolados por `operator_id`.
 - Sem OCR de capa ou texto.
 - Sem app mobile nativo — é PWA-like (manifest.json, ícones, `apple-web-app` meta tags) rodando em navegador mobile.
-- Sem testes automatizados no repositório (nenhum arquivo `*.test.*` ou `*.spec.*` encontrado).
+- Testes unitários (Vitest) cobrem apenas a lógica de negócio pura — ISBN lookup, fila offline, métricas do dashboard, exportação CSV e o gate de autenticação do middleware. Não há testes de UI/E2E: Server Components assíncronos (o dashboard) não são suportados por Jest/Vitest, e componentes client-side com chamadas Supabase ao vivo (`/books`) ficam fora de escopo por ora.
 - Sem CI/CD configurado além do deploy Vercel padrão.
 - Sem internacionalização — pt-BR fixo.
 - Meta de leitura anual (`YEARLY_READING_GOAL = 24`) é uma constante hardcoded, não configurável pelo usuário na UI.

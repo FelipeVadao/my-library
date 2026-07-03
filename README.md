@@ -68,6 +68,8 @@ Abra [http://localhost:3000](http://localhost:3000) — você será redirecionad
 | `npm run build` | Build de produção |
 | `npm run start` | Sobe o build de produção |
 | `npm run lint` | ESLint |
+| `npm test` | Roda a suíte de testes unitários (Vitest) |
+| `npm run test:watch` | Testes em modo watch |
 
 ## Deploy
 
@@ -80,4 +82,4 @@ O projeto está preparado para deploy na [Vercel](https://vercel.com). Configure
 
 ## Status
 
-Projeto pessoal em desenvolvimento ativo. Sem CI configurado além do deploy padrão da Vercel.
+Projeto pessoal em desenvolvimento ativo. Testes unitários (Vitest) cobrem a lógica de negócio testável — busca de ISBN, fila offline, métricas do dashboard, exportação CSV e o gate de autenticação. Sem CI configurado além do deploy padrão da Vercel.
