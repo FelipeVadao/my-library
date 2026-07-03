@@ -11,7 +11,8 @@ App pessoal de catalogação de livros: escaneie o código de barras (ISBN) de u
 - **Busca automática de metadados** por ISBN (Google Books + Open Library como fallback, consultadas em paralelo).
 - **Fila offline-first**: livros escaneados são gravados primeiro em `localStorage` e sincronizados com o Supabase em segundo plano — funciona sem conexão.
 - **Foto de capa pela câmera** quando a busca automática não retorna imagem.
-- **Dashboard** (`/`) com meta de leitura anual, funil de status, contador em tempo real, distribuição de notas, série temporal, heatmap gênero × mês, alertas de livros parados e recomendações.
+- **Dashboard** (`/`) com meta de leitura anual (padrão: 12 livros/ano), funil de status, contador em tempo real, distribuição de notas, série temporal, heatmap gênero × mês, alertas de livros parados, recomendações e um painel de livros emprestados. É a primeira tela após o login.
+- **Controle de empréstimos**: marque um livro como emprestado (nome de quem pegou) direto em `/books`, com botão para marcar como devolvido — o dashboard mostra um resumo de quem está com o quê.
 - **Gestão de livros** (`/books`): listagem paginada, busca, exportação CSV, exclusão individual ou em massa.
 - PWA-like (manifest, ícones), interface 100% em português (pt-BR).
 
@@ -52,13 +53,15 @@ cp .env.local.example .env.local
 
 No projeto Supabase, execute o schema em [`supabase/schema.sql`](./supabase/schema.sql) no SQL Editor — cria a tabela `books` (com RLS habilitado, restringindo acesso por `operator_id = auth.uid()`) e o bucket de Storage público `book-covers`. Documentação completa do modelo de dados em [`SPEC.md`](./SPEC.md#4-modelo-de-dados-supabase--postgres).
 
+Se você já tem um projeto Supabase criado antes da funcionalidade de empréstimos, rode também os arquivos numerados em [`supabase/migrations/`](./supabase/migrations/) (na ordem) para atualizar o schema existente sem perder dados.
+
 Depois, rode o servidor de desenvolvimento:
 
 ```bash
 npm run dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000) — você será redirecionado para `/scan` até fazer login.
+Abra [http://localhost:3000](http://localhost:3000) — sem sessão, você é redirecionado para `/scan` (login/cadastro); depois de autenticado, cai direto no dashboard.
 
 ## Scripts
 
