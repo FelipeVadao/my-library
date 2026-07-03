@@ -165,6 +165,10 @@ export default function BooksPage() {
           className="w-full bg-surface-panel border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 mb-4 focus:outline-none focus:border-blue-500"
         />
 
+        <p className="md:hidden text-xs text-slate-500 mb-2">
+          ← Arraste a tabela para o lado para ver status, empréstimo e ações →
+        </p>
+
         <div className="bg-surface-panel rounded-xl overflow-x-auto border border-slate-800">
           <table className="w-full text-sm min-w-[820px]">
             <thead>
