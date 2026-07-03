@@ -3,11 +3,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --color-surface: #0a0e1a;
+  --color-surface-panel: #101527;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--color-surface);
+  --color-surface-panel: var(--color-surface-panel);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
