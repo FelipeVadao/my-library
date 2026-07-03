@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS public.books (
                     CHECK (reading_status IN ('quero_ler','lendo','lido')),
   rating          smallint CHECK (rating BETWEEN 1 AND 5),
   finished_at     timestamptz,
+  loaned_to       text,
+  loaned_at       timestamptz,
   added_at        timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now()
 );
@@ -30,6 +32,7 @@ CREATE INDEX IF NOT EXISTS books_isbn_idx           ON public.books (isbn);
 CREATE INDEX IF NOT EXISTS books_reading_status_idx ON public.books (reading_status);
 CREATE INDEX IF NOT EXISTS books_added_at_idx       ON public.books (added_at DESC);
 CREATE INDEX IF NOT EXISTS books_genre_idx          ON public.books (genre);
+CREATE INDEX IF NOT EXISTS books_loaned_to_idx      ON public.books (loaned_to);
 
 -- =========================================================
 -- Row Level Security (RLS)

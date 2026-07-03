@@ -110,6 +110,25 @@ export function buildAlerts(books: Book[]) {
     }));
 }
 
+export function buildLoanedBooks(books: Book[]) {
+  const now = Date.now();
+  return books
+    .filter((b) => b.loaned_to)
+    .map((b) => {
+      const days = b.loaned_at
+        ? Math.floor((now - new Date(b.loaned_at).getTime()) / 86400000)
+        : 0;
+      return { book: b, days };
+    })
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 8)
+    .map(({ book, days }) => ({
+      title: book.title,
+      reason: `Emprestado para ${book.loaned_to} há ${days} dia(s).`,
+      severity: (days >= 60 ? 'alta' : 'media') as 'alta' | 'media',
+    }));
+}
+
 export function buildRecommendations(books: Book[], dailyData: { count: number }[]) {
   const recs: string[] = [];
 

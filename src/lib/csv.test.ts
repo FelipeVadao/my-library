@@ -18,6 +18,8 @@ function makeBook(overrides: Partial<Book> = {}): Book {
     reading_status: 'lido',
     rating: 5,
     finished_at: null,
+    loaned_to: null,
+    loaned_at: null,
     added_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
     ...overrides,

@@ -8,6 +8,8 @@ interface Alert {
 
 interface Props {
   alerts: Alert[];
+  title?: string;
+  emptyMessage?: string;
 }
 
 const SEVERITY_CLASSES: Record<Alert['severity'], string> = {
@@ -16,12 +18,12 @@ const SEVERITY_CLASSES: Record<Alert['severity'], string> = {
   baixa: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
 };
 
-export default function AlertsTable({ alerts }: Props) {
+export default function AlertsTable({ alerts, title = 'Alertas recentes', emptyMessage = 'Nenhum alerta no momento.' }: Props) {
   return (
     <div className="rounded-2xl border border-slate-800 bg-surface-panel p-5">
-      <h3 className="text-sm font-medium text-slate-400 mb-4">Alertas recentes</h3>
+      <h3 className="text-sm font-medium text-slate-400 mb-4">{title}</h3>
       {alerts.length === 0 ? (
-        <p className="text-slate-500 text-sm">Nenhum alerta no momento.</p>
+        <p className="text-slate-500 text-sm">{emptyMessage}</p>
       ) : (
         <div className="space-y-2">
           {alerts.map((a, i) => (

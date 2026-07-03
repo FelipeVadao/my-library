@@ -15,6 +15,8 @@ export type Book = {
   reading_status: ReadingStatus;
   rating: number | null;
   finished_at: string | null;
+  loaned_to: string | null;
+  loaned_at: string | null;
   added_at: string;
   updated_at: string;
 };

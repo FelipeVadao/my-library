@@ -10,6 +10,7 @@ import {
   buildTopAuthors,
   buildAlerts,
   buildRecommendations,
+  buildLoanedBooks,
 } from './dashboardMetrics';
 
 const FROZEN_NOW = '2026-07-15T12:00:00.000Z';
@@ -33,6 +34,8 @@ function makeBook(overrides: Partial<Book> = {}): Book {
     reading_status: 'quero_ler' as ReadingStatus,
     rating: null,
     finished_at: null,
+    loaned_to: null,
+    loaned_at: null,
     added_at: FROZEN_NOW,
     updated_at: FROZEN_NOW,
     ...overrides,
@@ -251,6 +254,62 @@ describe('buildAlerts', () => {
 
     expect(alerts).toHaveLength(8);
     expect(alerts[0].title).toBe('Book 9');
+  });
+});
+
+describe('buildLoanedBooks', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(FROZEN_NOW));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('only includes books with a loaned_to set', () => {
+    const books = [
+      makeBook({ title: 'Not loaned', loaned_to: null }),
+      makeBook({ title: 'Loaned', loaned_to: 'Maria', loaned_at: daysAgoISO(10) }),
+    ];
+
+    const loaned = buildLoanedBooks(books);
+
+    expect(loaned).toHaveLength(1);
+    expect(loaned[0].title).toBe('Loaned');
+  });
+
+  it('applies the 60-day severity threshold and includes the borrower name and day count in the reason', () => {
+    const books = [
+      makeBook({ title: 'Recent loan', loaned_to: 'João', loaned_at: daysAgoISO(10) }),
+      makeBook({ title: 'Old loan', loaned_to: 'Ana', loaned_at: daysAgoISO(65) }),
+    ];
+
+    const loaned = buildLoanedBooks(books);
+    const recent = loaned.find((l) => l.title === 'Recent loan');
+    const old = loaned.find((l) => l.title === 'Old loan');
+
+    expect(recent).toMatchObject({ severity: 'media' });
+    expect(recent?.reason).toBe('Emprestado para João há 10 dia(s).');
+    expect(old).toMatchObject({ severity: 'alta' });
+    expect(old?.reason).toBe('Emprestado para Ana há 65 dia(s).');
+  });
+
+  it('sorts by days loaned descending and caps at 8', () => {
+    const books = Array.from({ length: 10 }, (_, i) =>
+      makeBook({ title: `Book ${i}`, loaned_to: `Pessoa ${i}`, loaned_at: daysAgoISO(i) })
+    );
+
+    const loaned = buildLoanedBooks(books);
+
+    expect(loaned).toHaveLength(8);
+    expect(loaned[0].title).toBe('Book 9');
+  });
+
+  it('treats a missing loaned_at as 0 days', () => {
+    const books = [makeBook({ title: 'No date', loaned_to: 'Carlos', loaned_at: null })];
+    const loaned = buildLoanedBooks(books);
+    expect(loaned[0].reason).toBe('Emprestado para Carlos há 0 dia(s).');
   });
 });
 

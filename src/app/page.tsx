@@ -11,6 +11,7 @@ import {
   buildTopAuthors,
   buildAlerts,
   buildRecommendations,
+  buildLoanedBooks,
 } from '@/lib/dashboardMetrics';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,7 @@ import AlertsTable from '@/components/AlertsTable';
 import RecommendationsList from '@/components/RecommendationsList';
 import Link from 'next/link';
 
-const YEARLY_READING_GOAL = 24; // meta de livros lidos/ano usada no gauge — ajustável conforme a meta real
+const YEARLY_READING_GOAL = 12; // meta de livros lidos/ano usada no gauge — ajustável conforme a meta real
 
 async function getMetrics(userId: string) {
   const supabase = await createClient();
@@ -55,6 +56,7 @@ async function getMetrics(userId: string) {
 
   return {
     todayCount,
+    totalBooks: books.length,
     totalCopies,
     lidoCount,
     lendoCount,
@@ -67,6 +69,7 @@ async function getMetrics(userId: string) {
     topAuthors: buildTopAuthors(books),
     alerts: buildAlerts(books),
     recommendations: buildRecommendations(books, dailyData),
+    loanedBooks: buildLoanedBooks(books),
   };
 }
 
@@ -125,6 +128,14 @@ export default async function DashboardPage() {
             <MetricCard label="Total de exemplares" value={metrics.totalCopies.toLocaleString('pt-BR')} glow="blue" />
             <MetricCard label="Livros lidos" value={metrics.lidoCount.toLocaleString('pt-BR')} glow="emerald" />
             <MetricCard label="Lendo agora" value={metrics.lendoCount.toLocaleString('pt-BR')} glow="amber" />
+            <div className="col-span-2">
+              <MetricCard
+                label="Total de livros"
+                value={metrics.totalBooks.toLocaleString('pt-BR')}
+                sub="registros na biblioteca"
+                glow="rose"
+              />
+            </div>
           </div>
         </div>
 
@@ -147,6 +158,14 @@ export default async function DashboardPage() {
             <AlertsTable alerts={metrics.alerts} />
           </div>
           <RecommendationsList recommendations={metrics.recommendations} />
+        </div>
+
+        <div className="mb-6">
+          <AlertsTable
+            alerts={metrics.loanedBooks}
+            title="Livros emprestados"
+            emptyMessage="Nenhum livro emprestado no momento."
+          />
         </div>
 
         <div className="rounded-2xl border border-slate-800 bg-surface-panel p-5">

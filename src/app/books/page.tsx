@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Book, ReadingStatus } from '@/lib/supabase/types';
-import { deleteBook, deleteAllBooks } from '@/app/actions';
+import { deleteBook, deleteAllBooks, markBookLoaned, clearLoan } from '@/app/actions';
 import { toCSV } from '@/lib/csv';
 import Link from 'next/link';
 
@@ -44,6 +44,9 @@ export default function BooksPage() {
   const [total, setTotal] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [loaningId, setLoaningId] = useState<string | null>(null);
+  const [loanName, setLoanName] = useState('');
+  const [loanBusy, setLoanBusy] = useState<string | null>(null);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
@@ -88,6 +91,24 @@ export default function BooksPage() {
     setConfirmDeleteAll(false);
     setLoading(true);
     await deleteAllBooks();
+    fetchBooks();
+  }
+
+  async function handleConfirmLoan(id: string) {
+    const name = loanName.trim();
+    if (!name) return;
+    setLoanBusy(id);
+    await markBookLoaned(id, name);
+    setLoanBusy(null);
+    setLoaningId(null);
+    setLoanName('');
+    fetchBooks();
+  }
+
+  async function handleReturn(id: string) {
+    setLoanBusy(id);
+    await clearLoan(id);
+    setLoanBusy(null);
     fetchBooks();
   }
 
@@ -145,7 +166,7 @@ export default function BooksPage() {
         />
 
         <div className="bg-surface-panel rounded-xl overflow-x-auto border border-slate-800">
-          <table className="w-full text-sm min-w-[640px]">
+          <table className="w-full text-sm min-w-[820px]">
             <thead>
               <tr className="border-b border-slate-700">
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Capa</th>
@@ -153,6 +174,7 @@ export default function BooksPage() {
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Autor</th>
                 <th className="text-right px-4 py-3 text-slate-400 font-medium">Cópias</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">Emprestado</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Nota</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Adicionado</th>
                 <th className="text-right px-4 py-3 text-slate-400 font-medium"></th>
@@ -161,11 +183,11 @@ export default function BooksPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">Carregando...</td>
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">Carregando...</td>
                 </tr>
               ) : books.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-500">Nenhum livro encontrado.</td>
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">Nenhum livro encontrado.</td>
                 </tr>
               ) : (
                 books.map((b) => (
@@ -186,16 +208,73 @@ export default function BooksPage() {
                         {STATUS_LABEL[b.reading_status]}
                       </span>
                     </td>
+                    <td className="px-4 py-3">
+                      {b.loaned_to ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-semibold uppercase px-2 py-1 rounded-full border bg-orange-500/20 text-orange-400 border-orange-500/40 w-fit">
+                            Emprestado
+                          </span>
+                          <span className="text-xs text-slate-300">{b.loaned_to}</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-600">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-amber-400">{b.rating ? '★'.repeat(b.rating) : '—'}</td>
                     <td className="px-4 py-3 text-slate-400 text-xs">{formatDate(b.added_at)}</td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleDeleteOne(b.id)}
-                        disabled={deleting === b.id}
-                        className="text-red-500 hover:text-red-400 disabled:opacity-40 text-xs font-medium transition"
-                      >
-                        {deleting === b.id ? '...' : 'Apagar'}
-                      </button>
+                      {loaningId === b.id ? (
+                        <div className="flex gap-2 items-center justify-end">
+                          <input
+                            type="text"
+                            autoFocus
+                            value={loanName}
+                            onChange={(e) => setLoanName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleConfirmLoan(b.id)}
+                            placeholder="Nome de quem pegou"
+                            className="w-40 bg-surface border border-slate-700 rounded-lg px-2 py-1 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                          />
+                          <button
+                            onClick={() => handleConfirmLoan(b.id)}
+                            disabled={loanBusy === b.id || !loanName.trim()}
+                            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                          >
+                            {loanBusy === b.id ? '...' : 'Confirmar'}
+                          </button>
+                          <button
+                            onClick={() => { setLoaningId(null); setLoanName(''); }}
+                            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 items-center justify-end">
+                          {b.loaned_to ? (
+                            <button
+                              onClick={() => handleReturn(b.id)}
+                              disabled={loanBusy === b.id}
+                              className="bg-orange-900 hover:bg-orange-800 disabled:opacity-40 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                            >
+                              {loanBusy === b.id ? '...' : 'Devolver'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => { setLoaningId(b.id); setLoanName(''); }}
+                              className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                            >
+                              Emprestar
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteOne(b.id)}
+                            disabled={deleting === b.id}
+                            className="bg-red-900 hover:bg-red-800 disabled:opacity-40 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                          >
+                            {deleting === b.id ? '...' : 'Apagar'}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
