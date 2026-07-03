@@ -144,8 +144,8 @@ export default function BooksPage() {
           className="w-full bg-surface-panel border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 mb-4 focus:outline-none focus:border-blue-500"
         />
 
-        <div className="bg-surface-panel rounded-xl overflow-hidden border border-slate-800">
-          <table className="w-full text-sm">
+        <div className="bg-surface-panel rounded-xl overflow-x-auto border border-slate-800">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-slate-700">
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Capa</th>
