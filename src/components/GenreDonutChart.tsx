@@ -6,14 +6,14 @@ interface Props {
   data: { genre: string; count: number }[];
 }
 
-const COLORS = ['#3b82f6', '#34d399', '#f59e0b', '#f43f5e', '#a78bfa', '#22d3ee'];
+const COLORS = ['#A88420', '#74A15E', '#C97A3D', '#2E9C8A', '#C15A9E', '#E46458'];
 
 export default function GenreDonutChart({ data }: Props) {
   return (
-    <div className="rounded-2xl border border-rose-500/40 shadow-[0_0_24px_rgba(244,63,94,0.15)] bg-surface-panel p-5">
-      <h3 className="text-sm font-medium text-slate-400 mb-4">Distribuição por gênero</h3>
+    <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5">
+      <h3 className="text-sm font-medium text-ink-muted mb-4">Distribuição por gênero</h3>
       {data.length === 0 ? (
-        <p className="text-slate-500 text-sm">Sem dados suficientes ainda.</p>
+        <p className="text-ink-muted text-sm">Sem dados suficientes ainda.</p>
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <PieChart>
@@ -23,10 +23,10 @@ export default function GenreDonutChart({ data }: Props) {
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
-              labelStyle={{ color: '#f1f5f9' }}
+              contentStyle={{ backgroundColor: '#2C2318', border: '1px solid #5A492F', borderRadius: 8 }}
+              labelStyle={{ color: '#F1E6D2' }}
             />
-            <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
+            <Legend wrapperStyle={{ fontSize: 11, color: '#B9A98C' }} />
           </PieChart>
         </ResponsiveContainer>
       )}

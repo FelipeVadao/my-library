@@ -4,8 +4,8 @@
   "description": "Sua biblioteca pessoal de livros",
   "start_url": "/scan",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#18120C",
+  "theme_color": "#18120C",
   "orientation": "portrait",
   "icons": [
     {

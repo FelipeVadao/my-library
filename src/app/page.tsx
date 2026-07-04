@@ -39,7 +39,7 @@ async function getMetrics(userId: string) {
   const books = (data ?? []) as Book[];
 
   const todayStart = startOfDay();
-  const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
+  const yearStartMs = new Date(new Date().getFullYear(), 0, 1).getTime();
   const thirtyDaysAgo = daysAgo(30);
   const sixMonthsAgo = daysAgo(180);
 
@@ -49,7 +49,7 @@ async function getMetrics(userId: string) {
   const lendoCount = books.filter((b) => b.reading_status === 'lendo').length;
   const queroLerCount = books.filter((b) => b.reading_status === 'quero_ler').length;
   const readThisYear = books.filter(
-    (b) => b.reading_status === 'lido' && b.finished_at && b.finished_at >= yearStart
+    (b) => b.reading_status === 'lido' && b.finished_at && new Date(b.finished_at).getTime() >= yearStartMs
   ).length;
 
   const dailyData = buildDailyData(books.filter((b) => b.added_at >= thirtyDaysAgo));
@@ -84,23 +84,23 @@ export default async function DashboardPage() {
   const metrics = await getMetrics(user.id);
 
   return (
-    <main className="min-h-screen bg-surface text-white p-6">
+    <main className="min-h-screen bg-paper text-ink p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="lamp-glow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold">My Library</h1>
-            <p className="text-slate-400 text-sm mt-1">Sua biblioteca pessoal de livros</p>
+            <h1 className="font-serif text-2xl font-bold">My Library</h1>
+            <p className="text-ink-muted text-sm mt-1">Sua biblioteca pessoal de livros</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
               href="/scan"
-              className="text-sm text-white font-semibold px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition"
+              className="text-sm text-ink-deep font-semibold px-4 py-2 rounded-md bg-brass-strong hover:bg-brass-strong-hover transition"
             >
               ← Abrir Scanner
             </Link>
             <Link
               href="/books"
-              className="text-sm text-blue-400 hover:text-blue-300 px-4 py-2 rounded-lg border border-slate-700 hover:border-blue-500 transition"
+              className="text-sm text-brass-strong hover:text-brass-strong-hover px-4 py-2 rounded-md border border-border hover:border-brass transition"
             >
               Meus livros
             </Link>
@@ -117,23 +117,22 @@ export default async function DashboardPage() {
           <ScanFunnel
             title="Leituras em andamento"
             stages={[
-              { name: 'Quero ler', value: metrics.queroLerCount, fill: '#64748b' },
-              { name: 'Lendo', value: metrics.lendoCount, fill: '#3b82f6' },
-              { name: 'Lido', value: metrics.lidoCount, fill: '#34d399' },
+              { name: 'Quero ler', value: metrics.queroLerCount, fill: '#B9A98C' },
+              { name: 'Lendo', value: metrics.lendoCount, fill: '#C9A227' },
+              { name: 'Lido', value: metrics.lidoCount, fill: '#74A15E' },
             ]}
             caption="Livros no status quero ler → lendo → lido."
           />
           <div className="grid grid-cols-2 gap-4">
             <RealtimeCounter initialCount={metrics.todayCount} operatorId={user.id} />
-            <MetricCard label="Total de exemplares" value={metrics.totalCopies.toLocaleString('pt-BR')} glow="blue" />
-            <MetricCard label="Livros lidos" value={metrics.lidoCount.toLocaleString('pt-BR')} glow="emerald" />
-            <MetricCard label="Lendo agora" value={metrics.lendoCount.toLocaleString('pt-BR')} glow="amber" />
+            <MetricCard label="Total de exemplares" value={metrics.totalCopies.toLocaleString('pt-BR')} />
+            <MetricCard label="Livros lidos" value={metrics.lidoCount.toLocaleString('pt-BR')} />
+            <MetricCard label="Lendo agora" value={metrics.lendoCount.toLocaleString('pt-BR')} />
             <div className="col-span-2">
               <MetricCard
                 label="Total de livros"
                 value={metrics.totalBooks.toLocaleString('pt-BR')}
                 sub="registros na biblioteca"
-                glow="rose"
               />
             </div>
           </div>
@@ -168,22 +167,22 @@ export default async function DashboardPage() {
           />
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-surface-panel p-5">
-          <h3 className="text-sm font-medium text-slate-400 mb-4">Top autores</h3>
+        <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5">
+          <h3 className="text-sm font-medium text-ink-muted mb-4">Top autores</h3>
           {metrics.topAuthors.length === 0 ? (
-            <p className="text-slate-500 text-sm">Nenhum livro registrado ainda.</p>
+            <p className="text-ink-muted text-sm">Nenhum livro registrado ainda.</p>
           ) : (
             <div className="space-y-2">
               {metrics.topAuthors.map((a, i) => (
                 <div
                   key={a.author}
-                  className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0"
+                  className="flex items-center justify-between py-2 border-b border-border last:border-0"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-slate-500 text-sm w-5">{i + 1}</span>
-                    <span className="text-sm text-slate-300">{a.author}</span>
+                    <span className="text-ink-muted text-sm w-5">{i + 1}</span>
+                    <span className="text-sm text-ink">{a.author}</span>
                   </div>
-                  <span className="text-sm font-semibold text-blue-400">
+                  <span className="text-sm font-semibold text-brass-strong">
                     {a.count.toLocaleString('pt-BR')} livro(s)
                   </span>
                 </div>

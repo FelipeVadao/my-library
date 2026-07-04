@@ -30,10 +30,10 @@ export default function RealtimeCounter({ initialCount, operatorId }: Props) {
   }, [operatorId]);
 
   return (
-    <div className="rounded-2xl border border-emerald-500/40 shadow-[0_0_24px_rgba(16,185,129,0.15)] bg-blue-600 p-5 flex flex-col gap-1">
-      <span className="text-sm text-blue-200 font-medium">Livros adicionados hoje (tempo real)</span>
-      <span className="text-3xl font-bold text-white">{count.toLocaleString('pt-BR')}</span>
-      <span className="text-xs text-blue-300">● ao vivo</span>
+    <div className="lamp-glow rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-brass-strong p-5 flex flex-col gap-1">
+      <span className="text-sm text-ink-deep/80 font-medium">Livros adicionados hoje (tempo real)</span>
+      <span className="font-serif text-3xl font-bold text-ink-deep">{count.toLocaleString('pt-BR')}</span>
+      <span className="text-xs text-ink-deep/80">● ao vivo</span>
     </div>
   );
 }

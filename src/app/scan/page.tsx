@@ -62,7 +62,7 @@ const EMPTY_FORM = {
   copies: '1',
   readingStatus: 'quero_ler' as ReadingStatus,
   rating: 0,
-  finishedAt: '',
+  finishedYear: '',
 };
 
 // ── component ────────────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ export default function ScanPage() {
         copies: '1',
         readingStatus: 'quero_ler',
         rating: 0,
-        finishedAt: '',
+        finishedYear: '',
       });
     } else {
       setLookupNotFound(true);
@@ -261,8 +261,8 @@ export default function ScanPage() {
       copies: Number(form.copies) || 1,
       reading_status: form.readingStatus,
       rating: form.readingStatus === 'lido' && form.rating > 0 ? form.rating : null,
-      finished_at: form.readingStatus === 'lido' && form.finishedAt
-        ? new Date(form.finishedAt).toISOString()
+      finished_at: form.readingStatus === 'lido' && form.finishedYear
+        ? new Date(Number(form.finishedYear), 0, 1).toISOString()
         : null,
       added_at: new Date().toISOString(),
       operator_id: session.user.id,
@@ -446,8 +446,8 @@ export default function ScanPage() {
   // ── render ──
   if (view === 'loading') {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brass-strong border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -467,10 +467,10 @@ export default function ScanPage() {
     }
 
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-sm bg-slate-800 rounded-2xl p-8">
-          <h1 className="text-2xl font-bold text-white text-center mb-1">{titles[authMode]}</h1>
-          <p className="text-slate-400 text-sm text-center mb-8">{subtitles[authMode]}</p>
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center p-6">
+        <div className="lamp-glow w-full max-w-sm bg-paper-card rounded-lg p-8 border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)]">
+          <h1 className="font-serif text-2xl font-bold text-ink text-center mb-1">{titles[authMode]}</h1>
+          <p className="text-ink-muted text-sm text-center mb-8">{subtitles[authMode]}</p>
 
           <input
             type="email"
@@ -478,7 +478,7 @@ export default function ScanPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && authMode === 'forgot' && handleForgotPassword()}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 mb-3 focus:outline-none focus:border-blue-500"
+            className="w-full bg-paper border border-border rounded-md px-4 py-3 text-ink placeholder-ink-muted mb-3 focus:outline-none focus:border-brass-strong"
           />
 
           {authMode !== 'forgot' && (
@@ -488,22 +488,22 @@ export default function ScanPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && (authMode === 'signup' ? handleSignup() : handleLogin())}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 mb-4 focus:outline-none focus:border-blue-500"
+              className="w-full bg-paper border border-border rounded-md px-4 py-3 text-ink placeholder-ink-muted mb-4 focus:outline-none focus:border-brass-strong"
             />
           )}
 
           {authMsg && (
-            <p className="text-emerald-400 text-sm text-center mb-4">{authMsg}</p>
+            <p className="text-forest text-sm text-center mb-4">{authMsg}</p>
           )}
           {loginErr && (
-            <p className="text-red-400 text-sm text-center mb-4">{loginErr}</p>
+            <p className="text-oxblood-bright text-sm text-center mb-4">{loginErr}</p>
           )}
 
           {authMode === 'login' && (
             <button
               onClick={handleLogin}
               disabled={logging}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition"
+              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-ink-deep font-semibold py-3 rounded-md transition"
             >
               {logging ? 'Entrando...' : 'Entrar'}
             </button>
@@ -512,7 +512,7 @@ export default function ScanPage() {
             <button
               onClick={handleSignup}
               disabled={logging}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition"
+              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-ink-deep font-semibold py-3 rounded-md transition"
             >
               {logging ? 'Criando...' : 'Criar conta'}
             </button>
@@ -521,7 +521,7 @@ export default function ScanPage() {
             <button
               onClick={handleForgotPassword}
               disabled={logging}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition"
+              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-ink-deep font-semibold py-3 rounded-md transition"
             >
               {logging ? 'Enviando...' : 'Enviar link de recuperação'}
             </button>
@@ -530,22 +530,22 @@ export default function ScanPage() {
           <div className="flex items-center justify-between mt-4 text-xs">
             {authMode === 'login' ? (
               <>
-                <button onClick={() => switchMode('signup')} className="text-blue-400 hover:text-blue-300 transition">
+                <button onClick={() => switchMode('signup')} className="text-brass-strong hover:text-brass-strong-hover transition">
                   Criar conta
                 </button>
-                <button onClick={() => switchMode('forgot')} className="text-slate-500 hover:text-slate-300 transition">
+                <button onClick={() => switchMode('forgot')} className="text-ink-muted hover:text-ink transition">
                   Esqueci minha senha
                 </button>
               </>
             ) : (
-              <button onClick={() => switchMode('login')} className="text-blue-400 hover:text-blue-300 transition">
+              <button onClick={() => switchMode('login')} className="text-brass-strong hover:text-brass-strong-hover transition">
                 ← Voltar ao login
               </button>
             )}
           </div>
         </div>
 
-        <Link href="/" className="mt-6 text-slate-500 hover:text-slate-300 text-sm transition">
+        <Link href="/" className="mt-6 text-ink-muted hover:text-ink text-sm transition">
           ← Voltar ao Dashboard
         </Link>
       </div>
@@ -555,22 +555,22 @@ export default function ScanPage() {
   const showCamera = view === 'scanning' || capturingCover;
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
+    <div className="min-h-screen bg-paper flex flex-col">
       {/* header */}
-      <div className="bg-slate-900 px-4 pt-12 pb-3 flex items-center justify-between gap-3">
-        <Link href="/" className="text-blue-400 text-sm font-medium shrink-0">
+      <div className="bg-paper-card px-4 pt-12 pb-3 flex items-center justify-between gap-3">
+        <Link href="/" className="text-brass text-sm font-medium shrink-0">
           ← Dashboard
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-white font-bold text-base leading-tight">Scanner</h1>
-          <p className="text-slate-400 text-xs truncate">{session?.user.email}</p>
+          <h1 className="font-serif text-ink font-bold text-base leading-tight">Scanner</h1>
+          <p className="text-ink-muted text-xs truncate">{session?.user.email}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+          <span className="bg-brass-strong text-ink-deep text-xs font-semibold px-3 py-1 rounded-full">
             {bookCount} livros
           </span>
           {pending > 0 && (
-            <span className="bg-amber-500 text-black text-xs font-semibold px-3 py-1 rounded-full">
+            <span className="bg-brass text-ink-deep text-xs font-semibold px-3 py-1 rounded-full">
               {pending} pend.
             </span>
           )}
@@ -578,7 +578,7 @@ export default function ScanPage() {
       </div>
 
       {/* camera */}
-      <div className="relative flex-1">
+      <div className="relative flex-1 bg-black">
         <video
           ref={videoRef}
           autoPlay
@@ -591,17 +591,17 @@ export default function ScanPage() {
         {view === 'scanning' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             {cameraErr ? (
-              <div className="bg-red-900/80 rounded-2xl px-6 py-5 max-w-xs text-center mx-4 pointer-events-auto">
-                <p className="text-white font-semibold mb-2">Câmera indisponível</p>
-                <p className="text-red-200 text-sm mb-2">{cameraErr}</p>
-                <p className="text-red-400 text-xs">Permita o acesso à câmera nas configurações do navegador e recarregue a página.</p>
+              <div className="bg-oxblood/90 rounded-lg px-6 py-5 max-w-xs text-center mx-4 pointer-events-auto">
+                <p className="text-ink font-semibold mb-2">Câmera indisponível</p>
+                <p className="text-ink/90 text-sm mb-2">{cameraErr}</p>
+                <p className="text-ink/65 text-xs">Permita o acesso à câmera nas configurações do navegador e recarregue a página.</p>
               </div>
             ) : (
               <div className="w-64 h-40 relative">
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-400 rounded-tl-lg" />
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-400 rounded-tr-lg" />
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-400 rounded-bl-lg" />
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-400 rounded-br-lg" />
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-brass rounded-tl-lg" />
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brass rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-brass rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-brass rounded-br-lg" />
               </div>
             )}
           </div>
@@ -609,8 +609,8 @@ export default function ScanPage() {
 
         {view === 'lookup' && (
           <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-white text-sm font-medium">Buscando informações do livro...</span>
+            <div className="w-10 h-10 border-4 border-brass border-t-transparent rounded-full animate-spin" />
+            <span className="text-ink text-sm font-medium">Buscando informações do livro...</span>
           </div>
         )}
 
@@ -618,13 +618,13 @@ export default function ScanPage() {
           <div className="absolute bottom-4 left-4 right-4 flex gap-3">
             <button
               onClick={handleCancelCoverCapture}
-              className="flex-1 py-3 rounded-xl font-semibold text-sm bg-slate-700 hover:bg-slate-600 text-white transition"
+              className="flex-1 py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border text-ink transition"
             >
               Cancelar
             </button>
             <button
               onClick={handleCaptureCoverPhoto}
-              className="flex-1 py-3 rounded-xl font-semibold text-sm bg-blue-600 hover:bg-blue-500 text-white transition"
+              className="flex-1 py-3 rounded-md font-semibold text-sm bg-brass-strong hover:bg-brass-strong-hover text-ink-deep transition"
             >
               Capturar
             </button>
@@ -633,11 +633,11 @@ export default function ScanPage() {
       </div>
 
       {/* footer */}
-      <div className="bg-slate-900 px-4 pt-3 pb-8 overflow-y-auto">
+      <div className="bg-paper-card px-4 pt-3 pb-8 overflow-y-auto">
         {view === 'review' ? (
-          <div className="mb-3 bg-slate-800 rounded-xl p-4 space-y-3">
+          <div className="mb-3 bg-paper-card rounded-lg p-4 space-y-3">
             {lookupNotFound && (
-              <p className="text-amber-400 text-xs">
+              <p className="text-brass-strong text-xs">
                 Livro não encontrado automaticamente — preencha os dados manualmente.
               </p>
             )}
@@ -648,74 +648,74 @@ export default function ScanPage() {
             )}
 
             <div>
-              <label className="block text-slate-400 text-xs mb-1">ISBN</label>
+              <label className="block text-ink-muted text-xs mb-1">ISBN</label>
               <input
                 type="text"
                 value={form.isbn}
                 onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
               />
             </div>
 
             <div>
-              <label className="block text-slate-400 text-xs mb-1">Título</label>
+              <label className="block text-ink-muted text-xs mb-1">Título</label>
               <input
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 autoFocus
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
               />
             </div>
 
             <div>
-              <label className="block text-slate-400 text-xs mb-1">Autor</label>
+              <label className="block text-ink-muted text-xs mb-1">Autor</label>
               <input
                 type="text"
                 value={form.author}
                 onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-slate-400 text-xs mb-1">Editora</label>
+                <label className="block text-ink-muted text-xs mb-1">Editora</label>
                 <input
                   type="text"
                   value={form.publisher}
                   onChange={(e) => setForm((f) => ({ ...f, publisher: e.target.value }))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-xs mb-1">Ano</label>
+                <label className="block text-ink-muted text-xs mb-1">Ano</label>
                 <input
                   type="number"
                   value={form.publishedYear}
                   onChange={(e) => setForm((f) => ({ ...f, publishedYear: e.target.value }))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-slate-400 text-xs mb-1">Gênero</label>
+              <label className="block text-ink-muted text-xs mb-1">Gênero</label>
               <input
                 type="text"
                 value={form.genre}
                 onChange={(e) => setForm((f) => ({ ...f, genre: e.target.value }))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
               />
             </div>
 
             <div>
-              <label className="block text-slate-400 text-xs mb-1">Sinopse</label>
+              <label className="block text-ink-muted text-xs mb-1">Sinopse</label>
               <textarea
                 value={form.synopsis}
                 onChange={(e) => setForm((f) => ({ ...f, synopsis: e.target.value }))}
                 rows={2}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
               />
             </div>
 
@@ -723,7 +723,7 @@ export default function ScanPage() {
               <button
                 onClick={handleStartCoverCapture}
                 disabled={uploadingCover}
-                className="w-full py-2 rounded-lg text-sm font-semibold bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white transition"
+                className="w-full py-2 rounded-md text-sm font-semibold bg-tan hover:bg-border disabled:opacity-40 text-ink transition"
               >
                 {uploadingCover ? 'Enviando foto...' : 'Tirar foto da capa'}
               </button>
@@ -731,21 +731,28 @@ export default function ScanPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-slate-400 text-xs mb-1">Cópias</label>
+                <label className="block text-ink-muted text-xs mb-1">Cópias</label>
                 <input
                   type="number"
                   min={1}
                   value={form.copies}
                   onChange={(e) => setForm((f) => ({ ...f, copies: e.target.value }))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-xs mb-1">Status de leitura</label>
+                <label className="block text-ink-muted text-xs mb-1">Status de leitura</label>
                 <select
                   value={form.readingStatus}
-                  onChange={(e) => setForm((f) => ({ ...f, readingStatus: e.target.value as ReadingStatus }))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  onChange={(e) => {
+                    const next = e.target.value as ReadingStatus;
+                    setForm((f) => ({
+                      ...f,
+                      readingStatus: next,
+                      finishedYear: next === 'lido' && !f.finishedYear ? String(new Date().getFullYear()) : f.finishedYear,
+                    }));
+                  }}
+                  className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
                 >
                   <option value="quero_ler">Quero ler</option>
                   <option value="lendo">Lendo</option>
@@ -757,14 +764,14 @@ export default function ScanPage() {
             {form.readingStatus === 'lido' && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Nota</label>
+                  <label className="block text-ink-muted text-xs mb-1">Nota</label>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
                         key={n}
                         type="button"
                         onClick={() => setForm((f) => ({ ...f, rating: n }))}
-                        className={`text-2xl leading-none ${n <= form.rating ? 'text-amber-400' : 'text-slate-600'}`}
+                        className={`text-2xl leading-none ${n <= form.rating ? 'text-brass-strong' : 'text-border'}`}
                       >
                         ★
                       </button>
@@ -772,25 +779,25 @@ export default function ScanPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Data de conclusão</label>
+                  <label className="block text-ink-muted text-xs mb-1">Ano de leitura</label>
                   <div className="flex gap-2 items-center">
                     <input
-                      type="date"
-                      value={form.finishedAt}
-                      onChange={(e) => setForm((f) => ({ ...f, finishedAt: e.target.value }))}
-                      className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                      type="number"
+                      value={form.finishedYear}
+                      onChange={(e) => setForm((f) => ({ ...f, finishedYear: e.target.value }))}
+                      className="flex-1 bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
                     />
-                    {form.finishedAt && (
+                    {form.finishedYear && (
                       <button
                         type="button"
-                        onClick={() => setForm((f) => ({ ...f, finishedAt: '' }))}
-                        className="shrink-0 text-xs text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 px-2 py-2 rounded-lg transition"
+                        onClick={() => setForm((f) => ({ ...f, finishedYear: '' }))}
+                        className="shrink-0 text-xs text-ink-muted hover:text-ink bg-tan hover:bg-border px-2 py-2 rounded-md transition"
                       >
-                        Sem data
+                        Não sei
                       </button>
                     )}
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1">Opcional — deixe em branco se não souber.</p>
+                  <p className="text-[10px] text-ink-muted mt-1">Preenchido automaticamente com o ano atual.</p>
                 </div>
               </div>
             )}
@@ -798,14 +805,14 @@ export default function ScanPage() {
             <div className="flex gap-3 pt-1">
               <button
                 onClick={handleCancelReview}
-                className="flex-1 py-3 rounded-xl font-semibold text-sm bg-slate-700 hover:bg-slate-600 text-white transition"
+                className="flex-1 py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border text-ink transition"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={!form.title.trim()}
-                className="flex-1 py-3 rounded-xl font-semibold text-sm bg-green-700 hover:bg-green-600 disabled:opacity-40 text-white transition"
+                className="flex-1 py-3 rounded-md font-semibold text-sm bg-forest hover:bg-forest-hover disabled:opacity-40 text-ink-deep transition"
               >
                 Confirmar e salvar
               </button>
@@ -814,14 +821,14 @@ export default function ScanPage() {
         ) : view === 'scanning' ? (
           <>
             {syncMsg && (
-              <p className={`text-xs text-center mb-3 ${syncMsg.startsWith('Erro') ? 'text-red-400' : 'text-green-400'}`}>
+              <p className={`text-xs text-center mb-3 ${syncMsg.startsWith('Erro') ? 'text-oxblood-bright' : 'text-forest'}`}>
                 {syncMsg}
               </p>
             )}
 
             <button
               onClick={handleManualEntry}
-              className="w-full mb-3 py-3 rounded-xl font-semibold text-sm bg-slate-700 hover:bg-slate-600 text-white transition"
+              className="w-full mb-3 py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border text-ink transition"
             >
               Adicionar sem código de barras
             </button>
@@ -830,13 +837,13 @@ export default function ScanPage() {
               <button
                 onClick={handleManualSync}
                 disabled={syncing || pending === 0}
-                className="flex-1 py-3 rounded-xl font-semibold text-sm bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white transition"
+                className="flex-1 py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border disabled:opacity-40 text-ink transition"
               >
                 {syncing ? 'Enviando...' : pending > 0 ? `Enviar (${pending})` : 'Enviar'}
               </button>
               <Link
                 href="/books"
-                className="flex-1 py-3 rounded-xl font-semibold text-sm bg-slate-700 hover:bg-slate-600 text-white transition text-center"
+                className="flex-1 py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border text-ink transition text-center"
               >
                 Meus livros
               </Link>
@@ -844,7 +851,7 @@ export default function ScanPage() {
 
             <button
               onClick={handleLogout}
-              className="w-full py-2 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-400 transition"
+              className="w-full py-2 rounded-md text-sm font-semibold bg-paper hover:bg-tan text-ink-muted transition"
             >
               Sair
             </button>

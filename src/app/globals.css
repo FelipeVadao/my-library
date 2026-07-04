@@ -1,30 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --color-surface: #0a0e1a;
-  --color-surface-panel: #101527;
+  --paper: #18120C;
+  --paper-card: #2C2318;
+  --tan: #241B12;
+  --border: #5A492F;
+  --ink: #F1E6D2;
+  --ink-muted: #B9A98C;
+  --ink-deep: #20180D;
+  --brass: #C9A227;
+  --brass-strong: #C9A227;
+  --brass-strong-hover: #D6AE51;
+  --forest: #74A15E;
+  --forest-hover: #8BB078;
+  --oxblood: #912E27;
+  --oxblood-hover: #7A2620;
+  --oxblood-bright: #E4645A;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-surface: var(--color-surface);
-  --color-surface-panel: var(--color-surface-panel);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-paper: var(--paper);
+  --color-paper-card: var(--paper-card);
+  --color-tan: var(--tan);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-deep: var(--ink-deep);
+  --color-brass: var(--brass);
+  --color-brass-strong: var(--brass-strong);
+  --color-brass-strong-hover: var(--brass-strong-hover);
+  --color-forest: var(--forest);
+  --color-forest-hover: var(--forest-hover);
+  --color-oxblood: var(--oxblood);
+  --color-oxblood-hover: var(--oxblood-hover);
+  --color-oxblood-bright: var(--oxblood-bright);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-source-sans);
+  --font-serif: var(--font-playfair);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  background-image: radial-gradient(
+    ellipse 90% 70% at 50% 30%,
+    var(--color-tan) 0%,
+    var(--color-paper) 70%
+  );
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+.lamp-glow {
+  position: relative;
+  isolation: isolate;
+}
+
+.lamp-glow::before {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  z-index: -1;
+  background: radial-gradient(ellipse at center, rgba(201, 162, 39, 0.16), transparent 70%);
+  pointer-events: none;
 }
