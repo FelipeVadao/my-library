@@ -21,12 +21,12 @@ export default function ScanFunnel({ title, stages, caption }: Props) {
       <ResponsiveContainer width="100%" height={200}>
         <FunnelChart>
           <Tooltip
-            contentStyle={{ backgroundColor: '#2C2318', border: '1px solid #5A492F', borderRadius: 8 }}
-            labelStyle={{ color: '#F1E6D2' }}
+            contentStyle={{ backgroundColor: 'var(--color-paper-card)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+            labelStyle={{ color: 'var(--color-ink)' }}
           />
           <Funnel dataKey="value" data={stages} isAnimationActive>
-            <LabelList position="right" dataKey="name" fill="#B9A98C" fontSize={12} />
-            <LabelList position="center" dataKey="value" fill="#20180D" fontSize={16} fontWeight={700} />
+            <LabelList position="right" dataKey="name" fill="var(--color-ink-muted)" fontSize={12} />
+            <LabelList position="center" dataKey="value" fill="var(--color-on-accent)" fontSize={16} fontWeight={700} />
           </Funnel>
         </FunnelChart>
       </ResponsiveContainer>

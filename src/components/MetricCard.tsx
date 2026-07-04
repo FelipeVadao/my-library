@@ -14,9 +14,9 @@ export default function MetricCard({ label, value, sub, accent }: Props) {
         accent ? 'bg-brass-strong' : 'bg-paper-card'
       }`}
     >
-      <span className={`text-sm font-medium ${accent ? 'text-ink-deep/80' : 'text-ink-muted'}`}>{label}</span>
-      <span className={`font-serif text-3xl font-bold ${accent ? 'text-ink-deep' : 'text-ink'}`}>{value}</span>
-      {sub && <span className={`text-xs ${accent ? 'text-ink-deep/80' : 'text-ink-muted'}`}>{sub}</span>}
+      <span className={`text-sm font-medium ${accent ? 'text-on-accent/80' : 'text-ink-muted'}`}>{label}</span>
+      <span className={`font-serif text-3xl font-bold ${accent ? 'text-on-accent' : 'text-ink'}`}>{value}</span>
+      {sub && <span className={`text-xs ${accent ? 'text-on-accent/80' : 'text-ink-muted'}`}>{sub}</span>}
     </div>
   );
 }

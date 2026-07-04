@@ -243,7 +243,7 @@ export default function BooksPage() {
                           <button
                             onClick={() => handleConfirmLoan(b.id)}
                             disabled={loanBusy === b.id || !loanName.trim()}
-                            className="bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-40 text-ink-deep text-xs font-medium px-3 py-1.5 rounded-md transition"
+                            className="bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-40 text-on-accent text-xs font-medium px-3 py-1.5 rounded-md transition"
                           >
                             {loanBusy === b.id ? '...' : 'Confirmar'}
                           </button>
@@ -266,7 +266,7 @@ export default function BooksPage() {
                             <button
                               onClick={() => handleReturn(b.id)}
                               disabled={loanBusy === b.id}
-                              className="bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-40 text-ink-deep text-xs font-medium px-3 py-1.5 rounded-md transition"
+                              className="bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-40 text-on-accent text-xs font-medium px-3 py-1.5 rounded-md transition"
                             >
                               {loanBusy === b.id ? '...' : 'Devolver'}
                             </button>

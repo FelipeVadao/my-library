@@ -31,9 +31,9 @@ export default function RealtimeCounter({ initialCount, operatorId }: Props) {
 
   return (
     <div className="lamp-glow rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-brass-strong p-5 flex flex-col gap-1">
-      <span className="text-sm text-ink-deep/80 font-medium">Livros adicionados hoje (tempo real)</span>
-      <span className="font-serif text-3xl font-bold text-ink-deep">{count.toLocaleString('pt-BR')}</span>
-      <span className="text-xs text-ink-deep/80">● ao vivo</span>
+      <span className="text-sm text-on-accent/80 font-medium">Livros adicionados hoje (tempo real)</span>
+      <span className="font-serif text-3xl font-bold text-on-accent">{count.toLocaleString('pt-BR')}</span>
+      <span className="text-xs text-on-accent/80">● ao vivo</span>
     </div>
   );
 }

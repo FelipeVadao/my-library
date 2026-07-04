@@ -35,8 +35,8 @@ export default function GenreMonthHeatmap({ genres, months, matrix }: Props) {
                     return (
                       <td key={m} className="p-0">
                         <div
-                          className={`w-9 h-9 rounded-md flex items-center justify-center text-[10px] ${opacity > 0.6 ? 'text-ink-deep' : 'text-ink'}`}
-                          style={{ backgroundColor: `rgba(201,162,39,${opacity})` }}
+                          className={`w-9 h-9 rounded-md flex items-center justify-center text-[10px] ${opacity > 0.6 ? 'text-on-accent' : 'text-ink'}`}
+                          style={{ backgroundColor: `rgba(var(--brass-strong-rgb),${opacity})` }}
                         >
                           {v > 0 ? v : ''}
                         </div>

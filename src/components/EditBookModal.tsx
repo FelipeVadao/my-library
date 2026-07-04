@@ -305,7 +305,7 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
           <button
             onClick={handleSubmit}
             disabled={saving || !form.title.trim()}
-            className="flex-1 py-3 rounded-md font-semibold text-sm bg-forest hover:bg-forest-hover disabled:opacity-40 text-ink-deep transition"
+            className="flex-1 py-3 rounded-md font-semibold text-sm bg-forest hover:bg-forest-hover disabled:opacity-40 text-on-accent transition"
           >
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>

@@ -7,6 +7,7 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 import type { IScannerControls } from '@zxing/browser';
 import { createClient } from '@/lib/supabase/client';
+import ThemeToggle from '@/components/ThemeToggle';
 import { enqueue, getAll, removeByIds, pendingCount, type QueuedBook } from '@/lib/bookQueue';
 import { lookupIsbn } from '@/lib/booksApi';
 import type { ReadingStatus } from '@/lib/supabase/types';
@@ -503,7 +504,7 @@ export default function ScanPage() {
             <button
               onClick={handleLogin}
               disabled={logging}
-              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-ink-deep font-semibold py-3 rounded-md transition"
+              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-on-accent font-semibold py-3 rounded-md transition"
             >
               {logging ? 'Entrando...' : 'Entrar'}
             </button>
@@ -512,7 +513,7 @@ export default function ScanPage() {
             <button
               onClick={handleSignup}
               disabled={logging}
-              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-ink-deep font-semibold py-3 rounded-md transition"
+              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-on-accent font-semibold py-3 rounded-md transition"
             >
               {logging ? 'Criando...' : 'Criar conta'}
             </button>
@@ -521,7 +522,7 @@ export default function ScanPage() {
             <button
               onClick={handleForgotPassword}
               disabled={logging}
-              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-ink-deep font-semibold py-3 rounded-md transition"
+              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-on-accent font-semibold py-3 rounded-md transition"
             >
               {logging ? 'Enviando...' : 'Enviar link de recuperação'}
             </button>
@@ -548,6 +549,10 @@ export default function ScanPage() {
         <Link href="/" className="mt-6 text-ink-muted hover:text-ink text-sm transition">
           ← Voltar ao Dashboard
         </Link>
+
+        <div className="mt-4">
+          <ThemeToggle />
+        </div>
       </div>
     );
   }
@@ -558,7 +563,7 @@ export default function ScanPage() {
     <div className="min-h-screen bg-paper flex flex-col">
       {/* header */}
       <div className="bg-paper-card px-4 pt-12 pb-3 flex items-center justify-between gap-3">
-        <Link href="/" className="text-brass text-sm font-medium shrink-0">
+        <Link href="/" className="text-brass-strong text-sm font-medium shrink-0">
           ← Dashboard
         </Link>
         <div className="flex-1 min-w-0">
@@ -566,11 +571,11 @@ export default function ScanPage() {
           <p className="text-ink-muted text-xs truncate">{session?.user.email}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="bg-brass-strong text-ink-deep text-xs font-semibold px-3 py-1 rounded-full">
+          <span className="bg-brass-strong text-on-accent text-xs font-semibold px-3 py-1 rounded-full">
             {bookCount} livros
           </span>
           {pending > 0 && (
-            <span className="bg-brass text-ink-deep text-xs font-semibold px-3 py-1 rounded-full">
+            <span className="bg-brass text-on-accent text-xs font-semibold px-3 py-1 rounded-full">
               {pending} pend.
             </span>
           )}
@@ -624,7 +629,7 @@ export default function ScanPage() {
             </button>
             <button
               onClick={handleCaptureCoverPhoto}
-              className="flex-1 py-3 rounded-md font-semibold text-sm bg-brass-strong hover:bg-brass-strong-hover text-ink-deep transition"
+              className="flex-1 py-3 rounded-md font-semibold text-sm bg-brass-strong hover:bg-brass-strong-hover text-on-accent transition"
             >
               Capturar
             </button>
@@ -812,7 +817,7 @@ export default function ScanPage() {
               <button
                 onClick={handleSave}
                 disabled={!form.title.trim()}
-                className="flex-1 py-3 rounded-md font-semibold text-sm bg-forest hover:bg-forest-hover disabled:opacity-40 text-ink-deep transition"
+                className="flex-1 py-3 rounded-md font-semibold text-sm bg-forest hover:bg-forest-hover disabled:opacity-40 text-on-accent transition"
               >
                 Confirmar e salvar
               </button>

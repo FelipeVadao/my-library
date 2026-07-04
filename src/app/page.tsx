@@ -25,6 +25,7 @@ import GenreMonthHeatmap from '@/components/GenreMonthHeatmap';
 import GenreDonutChart from '@/components/GenreDonutChart';
 import AlertsTable from '@/components/AlertsTable';
 import RecommendationsList from '@/components/RecommendationsList';
+import ThemeToggle from '@/components/ThemeToggle';
 import Link from 'next/link';
 
 const YEARLY_READING_GOAL = 12; // meta de livros lidos/ano usada no gauge — ajustável conforme a meta real
@@ -94,7 +95,7 @@ export default async function DashboardPage() {
           <div className="flex flex-wrap gap-3">
             <Link
               href="/scan"
-              className="text-sm text-ink-deep font-semibold px-4 py-2 rounded-md bg-brass-strong hover:bg-brass-strong-hover transition"
+              className="text-sm text-on-accent font-semibold px-4 py-2 rounded-md bg-brass-strong hover:bg-brass-strong-hover transition"
             >
               ← Abrir Scanner
             </Link>
@@ -104,6 +105,7 @@ export default async function DashboardPage() {
             >
               Meus livros
             </Link>
+            <ThemeToggle />
           </div>
         </div>
 
@@ -117,9 +119,9 @@ export default async function DashboardPage() {
           <ScanFunnel
             title="Leituras em andamento"
             stages={[
-              { name: 'Quero ler', value: metrics.queroLerCount, fill: '#B9A98C' },
-              { name: 'Lendo', value: metrics.lendoCount, fill: '#C9A227' },
-              { name: 'Lido', value: metrics.lidoCount, fill: '#74A15E' },
+              { name: 'Quero ler', value: metrics.queroLerCount, fill: 'var(--color-ink-muted)' },
+              { name: 'Lendo', value: metrics.lendoCount, fill: 'var(--color-brass-strong)' },
+              { name: 'Lido', value: metrics.lidoCount, fill: 'var(--color-forest)' },
             ]}
             caption="Livros no status quero ler → lendo → lido."
           />

@@ -11,7 +11,7 @@ interface Props {
 
 export default function ScoreGauge({ value, max, label, sub }: Props) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  const data = [{ name: label, pct, fill: pct >= 70 ? '#74A15E' : pct >= 40 ? '#C9A227' : '#E4645A' }];
+  const data = [{ name: label, pct, fill: pct >= 70 ? 'var(--color-forest)' : pct >= 40 ? 'var(--color-brass-strong)' : 'var(--color-oxblood-bright)' }];
 
   return (
     <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5 flex flex-col items-center">
@@ -26,7 +26,7 @@ export default function ScoreGauge({ value, max, label, sub }: Props) {
             endAngle={-270}
           >
             <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-            <RadialBar dataKey="pct" cornerRadius={12} background={{ fill: '#5A492F' }} />
+            <RadialBar dataKey="pct" cornerRadius={12} background={{ fill: 'var(--color-border)' }} />
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
             <button
               onClick={handleSave}
               disabled={status === 'saving'}
-              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-ink-deep font-semibold py-3 rounded-md transition"
+              className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-on-accent font-semibold py-3 rounded-md transition"
             >
               {status === 'saving' ? 'Salvando...' : 'Salvar nova senha'}
             </button>

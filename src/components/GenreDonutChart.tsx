@@ -6,7 +6,7 @@ interface Props {
   data: { genre: string; count: number }[];
 }
 
-const COLORS = ['#A88420', '#74A15E', '#C97A3D', '#2E9C8A', '#C15A9E', '#E46458'];
+const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)'];
 
 export default function GenreDonutChart({ data }: Props) {
   return (
@@ -23,10 +23,10 @@ export default function GenreDonutChart({ data }: Props) {
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{ backgroundColor: '#2C2318', border: '1px solid #5A492F', borderRadius: 8 }}
-              labelStyle={{ color: '#F1E6D2' }}
+              contentStyle={{ backgroundColor: 'var(--color-paper-card)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+              labelStyle={{ color: 'var(--color-ink)' }}
             />
-            <Legend wrapperStyle={{ fontSize: 11, color: '#B9A98C' }} />
+            <Legend wrapperStyle={{ fontSize: 11, color: 'var(--color-ink-muted)' }} />
           </PieChart>
         </ResponsiveContainer>
       )}

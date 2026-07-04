@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Source_Sans_3 } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const playfairDisplay = Playfair_Display({
@@ -33,11 +34,15 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={`${playfairDisplay.variable} ${sourceSans.variable} h-full antialiased`}
     >
       <head>
         <meta name="theme-color" content="#18120C" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(function(){try{if(localStorage.getItem('theme')==='light'){document.documentElement.setAttribute('data-theme','light');}}catch(e){}})();`}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
