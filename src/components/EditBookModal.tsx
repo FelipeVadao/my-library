@@ -18,6 +18,7 @@ type EditForm = {
   publishedYear: string;
   genre: string;
   synopsis: string;
+  readerSummary: string;
   coverUrl: string;
   copies: string;
   readingStatus: ReadingStatus;
@@ -41,6 +42,7 @@ function bookToForm(book: Book): EditForm {
     publishedYear: book.published_year ? String(book.published_year) : '',
     genre: book.genre ?? '',
     synopsis: book.synopsis ?? '',
+    readerSummary: book.reader_summary ?? '',
     coverUrl: book.cover_url ?? '',
     copies: String(book.copies),
     readingStatus: book.reading_status,
@@ -79,6 +81,7 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
       published_year: form.publishedYear ? Number(form.publishedYear) : null,
       genre: form.genre.trim() || null,
       synopsis: form.synopsis.trim() || null,
+      reader_summary: form.readerSummary.trim() || null,
       cover_url: form.coverUrl.trim() || null,
       copies: Number(form.copies) || 1,
       reading_status: form.readingStatus,
@@ -184,6 +187,18 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
               rows={2}
               className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
             />
+          </div>
+
+          <div>
+            <label className="block text-ink-muted text-xs mb-1">Resumo do leitor</label>
+            <textarea
+              value={form.readerSummary}
+              onChange={(e) => setForm((f) => ({ ...f, readerSummary: e.target.value }))}
+              rows={4}
+              maxLength={2000}
+              className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
+            />
+            <p className="text-ink-muted text-xs mt-1 text-right">{form.readerSummary.length}/2000</p>
           </div>
 
           <div>

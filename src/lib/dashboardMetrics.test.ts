@@ -29,6 +29,7 @@ function makeBook(overrides: Partial<Book> = {}): Book {
     published_year: null,
     genre: null,
     synopsis: null,
+    reader_summary: null,
     cover_url: null,
     copies: 1,
     reading_status: 'quero_ler' as ReadingStatus,

@@ -11,6 +11,7 @@ export type UpdateBookInput = {
   published_year: number | null;
   genre: string | null;
   synopsis: string | null;
+  reader_summary: string | null;
   cover_url: string | null;
   copies: number;
   reading_status: ReadingStatus;
@@ -35,6 +36,7 @@ export async function updateBook(id: string, input: UpdateBookInput): Promise<{ 
       published_year: input.published_year,
       genre: input.genre,
       synopsis: input.synopsis,
+      reader_summary: input.reader_summary,
       cover_url: input.cover_url,
       copies: Math.max(1, Math.trunc(input.copies) || 1),
       reading_status: input.reading_status,
@@ -78,5 +80,31 @@ export async function clearLoan(id: string): Promise<{ error: string | null }> {
     .from('books')
     .update({ loaned_to: null, loaned_at: null })
     .eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+const DEFAULT_READING_GOAL = 12;
+
+export async function getReadingGoal(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('reading_goals')
+    .select('annual_goal')
+    .eq('operator_id', userId)
+    .maybeSingle();
+  return data?.annual_goal ?? DEFAULT_READING_GOAL;
+}
+
+export async function updateReadingGoal(goal: number): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: 'Não autenticado.' };
+
+  const annualGoal = Math.max(1, Math.trunc(goal) || 1);
+  const { error } = await supabase
+    .from('reading_goals')
+    .upsert({ operator_id: user.id, annual_goal: annualGoal, updated_at: new Date().toISOString() });
   return { error: error?.message ?? null };
 }

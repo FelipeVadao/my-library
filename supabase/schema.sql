@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.books (
   published_year  integer,
   genre           text,
   synopsis        text,
+  reader_summary  text CHECK (char_length(reader_summary) <= 2000),
   cover_url       text,
   copies          integer NOT NULL DEFAULT 1 CHECK (copies >= 1),
   reading_status  text NOT NULL DEFAULT 'quero_ler'
@@ -80,3 +81,26 @@ CREATE POLICY "public_read_covers" ON storage.objects
 CREATE POLICY "operador_delete_own_covers" ON storage.objects
   FOR DELETE TO authenticated
   USING (bucket_id = 'book-covers' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+-- =========================================================
+-- Meta de leitura anual: cada leitor define sua própria meta de
+-- livros lidos por ano.
+-- =========================================================
+CREATE TABLE IF NOT EXISTS public.reading_goals (
+  operator_id  uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  annual_goal  integer NOT NULL DEFAULT 12 CHECK (annual_goal >= 1),
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.reading_goals ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "operador_select_own_goal" ON public.reading_goals;
+DROP POLICY IF EXISTS "operador_insert_own_goal" ON public.reading_goals;
+DROP POLICY IF EXISTS "operador_update_own_goal" ON public.reading_goals;
+
+CREATE POLICY "operador_select_own_goal" ON public.reading_goals
+  FOR SELECT USING (auth.uid() = operator_id);
+CREATE POLICY "operador_insert_own_goal" ON public.reading_goals
+  FOR INSERT WITH CHECK (auth.uid() = operator_id);
+CREATE POLICY "operador_update_own_goal" ON public.reading_goals
+  FOR UPDATE USING (auth.uid() = operator_id) WITH CHECK (auth.uid() = operator_id);

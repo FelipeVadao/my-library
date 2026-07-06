@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getReadingGoal } from '@/app/actions';
 import type { Book } from '@/lib/supabase/types';
 import {
   startOfDay,
@@ -19,7 +20,7 @@ import MetricCard from '@/components/MetricCard';
 import RatingDistributionChart from '@/components/RatingDistributionChart';
 import DailyChart from '@/components/DailyChart';
 import RealtimeCounter from '@/components/RealtimeCounter';
-import ScoreGauge from '@/components/ScoreGauge';
+import ReadingGoalGauge from '@/components/ReadingGoalGauge';
 import ScanFunnel from '@/components/ScanFunnel';
 import GenreMonthHeatmap from '@/components/GenreMonthHeatmap';
 import GenreDonutChart from '@/components/GenreDonutChart';
@@ -27,8 +28,6 @@ import AlertsTable from '@/components/AlertsTable';
 import RecommendationsList from '@/components/RecommendationsList';
 import ThemeToggle from '@/components/ThemeToggle';
 import Link from 'next/link';
-
-const YEARLY_READING_GOAL = 12; // meta de livros lidos/ano usada no gauge — ajustável conforme a meta real
 
 async function getMetrics(userId: string) {
   const supabase = await createClient();
@@ -83,6 +82,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/scan');
 
   const metrics = await getMetrics(user.id);
+  const goal = await getReadingGoal(user.id);
 
   return (
     <main className="min-h-screen bg-paper text-ink p-6">
@@ -110,12 +110,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-4 mb-6">
-          <ScoreGauge
-            value={metrics.readThisYear}
-            max={YEARLY_READING_GOAL}
-            label="Meta de leitura anual"
-            sub={`${metrics.readThisYear} de ${YEARLY_READING_GOAL} livros lidos`}
-          />
+          <ReadingGoalGauge value={metrics.readThisYear} initialGoal={goal} />
           <ScanFunnel
             title="Leituras em andamento"
             stages={[

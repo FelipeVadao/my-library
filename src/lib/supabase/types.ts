@@ -10,6 +10,7 @@ export type Book = {
   published_year: number | null;
   genre: string | null;
   synopsis: string | null;
+  reader_summary: string | null;
   cover_url: string | null;
   copies: number;
   reading_status: ReadingStatus;
