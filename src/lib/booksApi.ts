@@ -6,6 +6,8 @@ export interface BookLookupResult {
   genre: string | null;
   synopsis: string | null;
   coverUrl: string | null;
+  pageCount: number | null;
+  language: string | null;
 }
 
 // Open Library's response time varies widely in practice (observed 1.7s-9.1s) —
@@ -40,6 +42,8 @@ interface GoogleBooksResponse {
       description?: string;
       categories?: string[];
       imageLinks?: { thumbnail?: string; smallThumbnail?: string };
+      pageCount?: number;
+      language?: string;
     };
   }>;
 }
@@ -64,6 +68,8 @@ async function lookupGoogleBooks(isbn: string): Promise<BookLookupResult | null>
     genre: info.categories?.[0] ?? null,
     synopsis: info.description ?? null,
     coverUrl: info.imageLinks?.thumbnail?.replace('http://', 'https://') ?? null,
+    pageCount: info.pageCount ?? null,
+    language: info.language ?? null,
   };
 }
 
@@ -74,6 +80,7 @@ interface OpenLibraryEntry {
   publish_date?: string;
   subjects?: Array<{ name?: string }>;
   cover?: { small?: string; medium?: string; large?: string };
+  number_of_pages?: number;
 }
 
 async function lookupOpenLibrary(isbn: string): Promise<BookLookupResult | null> {
@@ -94,6 +101,9 @@ async function lookupOpenLibrary(isbn: string): Promise<BookLookupResult | null>
     genre: entry.subjects?.[0]?.name ?? null,
     synopsis: null,
     coverUrl: entry.cover?.large ?? entry.cover?.medium ?? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+    pageCount: entry.number_of_pages ?? null,
+    // Open Library's jscmd=data payload doesn't include a language field.
+    language: null,
   };
 }
 

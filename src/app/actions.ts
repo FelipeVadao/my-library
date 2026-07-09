@@ -1,25 +1,9 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { ReadingStatus } from '@/lib/supabase/types';
+import type { Book } from '@/lib/supabase/types';
 
-export type UpdateBookInput = {
-  title: string;
-  isbn: string | null;
-  author: string | null;
-  publisher: string | null;
-  published_year: number | null;
-  genre: string | null;
-  synopsis: string | null;
-  reader_summary: string | null;
-  cover_url: string | null;
-  copies: number;
-  reading_status: ReadingStatus;
-  rating: number | null;
-  finished_at: string | null;
-  loaned_to: string | null;
-  loaned_at: string | null;
-};
+export type UpdateBookInput = Omit<Book, 'id' | 'operator_id' | 'added_at' | 'updated_at'>;
 
 export async function updateBook(id: string, input: UpdateBookInput): Promise<{ error: string | null }> {
   const title = input.title.trim();
@@ -44,6 +28,11 @@ export async function updateBook(id: string, input: UpdateBookInput): Promise<{ 
       finished_at: input.reading_status === 'lido' ? input.finished_at : null,
       loaned_to: input.loaned_to,
       loaned_at: input.loaned_to ? input.loaned_at : null,
+      favorite: input.favorite,
+      started_at: input.reading_status !== 'quero_ler' ? input.started_at : null,
+      page_count: input.page_count,
+      current_page: input.reading_status !== 'quero_ler' ? input.current_page : null,
+      language: input.language,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id);

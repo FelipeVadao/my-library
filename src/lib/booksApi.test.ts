@@ -45,6 +45,8 @@ describe('lookupIsbn', () => {
                   description: 'Google synopsis',
                   categories: ['Fiction'],
                   imageLinks: { thumbnail: 'http://books.google.com/cover.jpg' },
+                  pageCount: 320,
+                  language: 'en',
                 },
               },
             ],
@@ -64,6 +66,8 @@ describe('lookupIsbn', () => {
       genre: 'Fiction',
       synopsis: 'Google synopsis',
       coverUrl: 'https://books.google.com/cover.jpg',
+      pageCount: 320,
+      language: 'en',
     });
   });
 
@@ -80,6 +84,7 @@ describe('lookupIsbn', () => {
             publishers: [{ name: 'OL Publisher' }],
             publish_date: 'March 2020',
             subjects: [{ name: 'Sci-Fi' }],
+            number_of_pages: 250,
           },
         })
       );
@@ -95,6 +100,8 @@ describe('lookupIsbn', () => {
       genre: 'Sci-Fi',
       synopsis: null,
       coverUrl: 'https://covers.openlibrary.org/b/isbn/456-L.jpg',
+      pageCount: 250,
+      language: null,
     });
   });
 

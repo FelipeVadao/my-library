@@ -14,6 +14,11 @@ export interface QueuedBook {
   reading_status: ReadingStatus;
   rating: number | null;
   finished_at: string | null;
+  favorite: boolean;
+  started_at: string | null;
+  page_count: number | null;
+  current_page: number | null;
+  language: string | null;
   added_at: string;
   operator_id: string;
 }
