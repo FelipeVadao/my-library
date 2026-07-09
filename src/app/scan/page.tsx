@@ -10,7 +10,9 @@ import type { IScannerControls } from '@zxing/browser';
 import { createClient } from '@/lib/supabase/client';
 import ThemeToggle from '@/components/ThemeToggle';
 import { enqueue, getAll, removeByIds, pendingCount, type QueuedBook } from '@/lib/bookQueue';
-import { lookupIsbn } from '@/lib/booksApi';
+import { lookupIsbn, searchByTitleAuthor, type BookLookupResult } from '@/lib/booksApi';
+import { recognizeIsbnFromImage } from '@/lib/isbnOcr';
+import { identifyBookFromCover } from './actions';
 import type { ReadingStatus } from '@/lib/supabase/types';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 
@@ -69,9 +71,41 @@ const EMPTY_FORM = {
   language: '',
 };
 
+function buildFormFromLookup(result: BookLookupResult, overrides: Partial<typeof EMPTY_FORM> = {}) {
+  return {
+    ...EMPTY_FORM,
+    title: result.title,
+    author: result.author ?? '',
+    publisher: result.publisher ?? '',
+    publishedYear: result.publishedYear ? String(result.publishedYear) : '',
+    genre: result.genre ?? '',
+    synopsis: result.synopsis ?? '',
+    coverUrl: result.coverUrl ?? '',
+    pageCount: result.pageCount ? String(result.pageCount) : '',
+    language: result.language ?? '',
+    ...overrides,
+  };
+}
+
+// Downscales a captured frame before sending it to the AI Gateway — keeps
+// the Server Action payload small and the vision call cheap/fast. The
+// Storage-bound cover photo (uploaded separately) stays full resolution.
+function downscaleCanvas(source: HTMLCanvasElement, maxDim: number): string {
+  const scale = Math.min(1, maxDim / Math.max(source.width, source.height));
+  if (scale === 1) return source.toDataURL('image/jpeg', 0.8);
+
+  const small = document.createElement('canvas');
+  small.width = Math.round(source.width * scale);
+  small.height = Math.round(source.height * scale);
+  const ctx = small.getContext('2d');
+  ctx?.drawImage(source, 0, 0, small.width, small.height);
+  return small.toDataURL('image/jpeg', 0.8);
+}
+
 // ── component ────────────────────────────────────────────────────────────────
 
-type View = 'loading' | 'login' | 'scanning' | 'lookup' | 'review';
+type View = 'loading' | 'login' | 'scanning' | 'ocr' | 'lookup' | 'review';
+type CaptureMode = 'attach-cover' | 'identify-cover';
 
 export default function ScanPage() {
   const router = useRouter();
@@ -94,8 +128,9 @@ export default function ScanPage() {
   const [lookupNotFound, setLookupNotFound] = useState(false);
 
   const [form, setForm] = useState(EMPTY_FORM);
-  const [capturingCover, setCapturingCover] = useState(false);
+  const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [ocrNotFound, setOcrNotFound] = useState(false);
 
   const videoRef      = useRef<HTMLVideoElement>(null);
   const controlsRef    = useRef<IScannerControls | null>(null);
@@ -120,25 +155,32 @@ export default function ScanPage() {
     setLookupNotFound(false);
     const result = await lookupIsbn(isbn);
     if (result) {
-      setForm({
-        isbn,
-        title: result.title,
-        author: result.author ?? '',
-        publisher: result.publisher ?? '',
-        publishedYear: result.publishedYear ? String(result.publishedYear) : '',
-        genre: result.genre ?? '',
-        synopsis: result.synopsis ?? '',
-        coverUrl: result.coverUrl ?? '',
-        copies: '1',
-        readingStatus: 'quero_ler',
-        rating: 0,
-        finishedYear: '',
-        pageCount: result.pageCount ? String(result.pageCount) : '',
-        language: result.language ?? '',
-      });
+      setForm(buildFormFromLookup(result, { isbn }));
     } else {
       setLookupNotFound(true);
       setForm({ ...EMPTY_FORM, isbn });
+    }
+    setView('review');
+  }, []);
+
+  const handleCoverIdentified = useCallback(async (uploadedCoverUrl: string, dataUrl: string) => {
+    setView('lookup');
+    setLookupNotFound(false);
+    const identified = await identifyBookFromCover(dataUrl);
+
+    if (!identified.title) {
+      setLookupNotFound(true);
+      setForm({ ...EMPTY_FORM, coverUrl: uploadedCoverUrl });
+      setView('review');
+      return;
+    }
+
+    const searchResult = await searchByTitleAuthor(identified.title, identified.author);
+    if (searchResult) {
+      setForm(buildFormFromLookup(searchResult, { coverUrl: uploadedCoverUrl }));
+    } else {
+      setLookupNotFound(true);
+      setForm({ ...EMPTY_FORM, title: identified.title, author: identified.author ?? '', coverUrl: uploadedCoverUrl });
     }
     setView('review');
   }, []);
@@ -196,29 +238,41 @@ export default function ScanPage() {
     setView('scanning');
   }, []);
 
-  // cover photo capture — reuses the same <video> element, but with a plain
-  // getUserMedia stream instead of the zxing barcode decoder
-  const handleStartCoverCapture = useCallback(async () => {
-    setCapturingCover(true);
+  // cover photo capture — shared by two flows (attach a cover to an
+  // already-identified book, or identify a book from its cover via AI);
+  // both reuse the same <video> element, with a plain getUserMedia stream
+  // instead of the zxing barcode decoder.
+  const handleStartCapture = useCallback(async (mode: CaptureMode) => {
+    setCaptureMode(mode);
+    setOcrNotFound(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       coverStreamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (err) {
       setCameraErr(err instanceof Error ? err.message : 'Erro ao acessar câmera');
-      setCapturingCover(false);
+      setCaptureMode(null);
     }
   }, []);
 
-  const handleCancelCoverCapture = useCallback(() => {
+  const handleCancelCapture = useCallback(() => {
     coverStreamRef.current?.getTracks().forEach((t) => t.stop());
     coverStreamRef.current = null;
-    setCapturingCover(false);
+    setCaptureMode(null);
   }, []);
 
-  const handleCaptureCoverPhoto = useCallback(async () => {
+  async function uploadCoverBlob(blob: Blob): Promise<string | null> {
+    if (!session) return null;
+    const path = `${session.user.id}/${randomId()}.jpg`;
+    const { error } = await supabase.storage.from('book-covers').upload(path, blob, { contentType: 'image/jpeg' });
+    if (error) return null;
+    return supabase.storage.from('book-covers').getPublicUrl(path).data.publicUrl;
+  }
+
+  const handleCapturePhoto = useCallback(async () => {
     const video = videoRef.current;
-    if (!video || !video.videoWidth || !session) return;
+    const mode = captureMode;
+    if (!video || !video.videoWidth || !session || !mode) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
@@ -229,7 +283,7 @@ export default function ScanPage() {
 
     coverStreamRef.current?.getTracks().forEach((t) => t.stop());
     coverStreamRef.current = null;
-    setCapturingCover(false);
+    setCaptureMode(null);
     setUploadingCover(true);
 
     canvas.toBlob(async (blob) => {
@@ -237,18 +291,50 @@ export default function ScanPage() {
         setUploadingCover(false);
         return;
       }
-      const path = `${session.user.id}/${randomId()}.jpg`;
-      const { error } = await supabase.storage
-        .from('book-covers')
-        .upload(path, blob, { contentType: 'image/jpeg' });
-
-      if (!error) {
-        const { data } = supabase.storage.from('book-covers').getPublicUrl(path);
-        setForm((f) => ({ ...f, coverUrl: data.publicUrl }));
-      }
+      const uploadedCoverUrl = await uploadCoverBlob(blob);
       setUploadingCover(false);
+
+      if (mode === 'attach-cover') {
+        if (uploadedCoverUrl) setForm((f) => ({ ...f, coverUrl: uploadedCoverUrl }));
+        return;
+      }
+
+      // identify-cover: send a downscaled copy to the AI Gateway while the
+      // full-resolution upload above becomes the book's permanent cover.
+      const dataUrl = downscaleCanvas(canvas, 1024);
+      handleCoverIdentified(uploadedCoverUrl ?? '', dataUrl);
     }, 'image/jpeg', 0.85);
-  }, [session, supabase]);
+  }, [session, supabase, captureMode, handleCoverIdentified]);
+
+  // OCR fallback for a printed ISBN — unlike the cover-capture flows above,
+  // this reuses the video feed the barcode decoder is already reading
+  // (single tap, no separate getUserMedia stream/Capturar step needed).
+  const handleOcrCapture = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || processingRef.current) return;
+    processingRef.current = true;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      processingRef.current = false;
+      return;
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    setOcrNotFound(false);
+    setView('ocr');
+    const isbn = await recognizeIsbnFromImage(canvas);
+    if (isbn) {
+      handleIsbnDetected(isbn);
+    } else {
+      setOcrNotFound(true);
+      processingRef.current = false;
+      setView('scanning');
+    }
+  }, [handleIsbnDetected]);
 
   const handleSave = useCallback(() => {
     const title = form.title.trim();
@@ -575,7 +661,7 @@ export default function ScanPage() {
     );
   }
 
-  const showCamera = view === 'scanning' || capturingCover;
+  const showCamera = view === 'scanning' || captureMode !== null;
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
@@ -630,23 +716,25 @@ export default function ScanPage() {
           </div>
         )}
 
-        {view === 'lookup' && (
+        {(view === 'lookup' || view === 'ocr') && (
           <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
             <Loader2 size={40} className="animate-spin text-brass" />
-            <span className="text-ink text-sm font-medium">Buscando informações do livro...</span>
+            <span className="text-ink text-sm font-medium">
+              {view === 'ocr' ? 'Lendo o ISBN da foto...' : 'Buscando informações do livro...'}
+            </span>
           </div>
         )}
 
-        {capturingCover && (
+        {captureMode !== null && (
           <div className="absolute bottom-4 left-4 right-4 flex gap-3">
             <button
-              onClick={handleCancelCoverCapture}
+              onClick={handleCancelCapture}
               className="flex-1 py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border text-ink transition"
             >
               Cancelar
             </button>
             <button
-              onClick={handleCaptureCoverPhoto}
+              onClick={handleCapturePhoto}
               className="flex-1 py-3 rounded-md font-semibold text-sm bg-brass-strong hover:bg-brass-strong-hover text-on-accent transition"
             >
               Capturar
@@ -665,7 +753,7 @@ export default function ScanPage() {
               </p>
             )}
 
-            {form.coverUrl && !capturingCover && (
+            {form.coverUrl && captureMode === null && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={form.coverUrl}
@@ -777,9 +865,9 @@ export default function ScanPage() {
               </div>
             </div>
 
-            {!form.coverUrl && !capturingCover && (
+            {!form.coverUrl && captureMode === null && (
               <button
-                onClick={handleStartCoverCapture}
+                onClick={() => handleStartCapture('attach-cover')}
                 disabled={uploadingCover}
                 className="w-full py-2 rounded-md text-sm font-semibold bg-tan hover:bg-border disabled:opacity-40 text-ink transition"
               >
@@ -889,6 +977,27 @@ export default function ScanPage() {
                 {syncMsg}
               </p>
             )}
+
+            {ocrNotFound && (
+              <p className="text-brass-strong text-xs text-center mb-3">
+                Não conseguimos ler o ISBN na foto — tente novamente ou toque em &quot;Adicionar sem código de barras&quot;.
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <button
+                onClick={handleOcrCapture}
+                className="py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border text-ink transition"
+              >
+                Fotografar o ISBN
+              </button>
+              <button
+                onClick={() => handleStartCapture('identify-cover')}
+                className="py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border text-ink transition"
+              >
+                Identificar pela capa
+              </button>
+            </div>
 
             <button
               onClick={handleManualEntry}

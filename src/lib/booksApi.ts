@@ -32,34 +32,24 @@ function extractYear(dateLike: string | undefined | null): number | null {
   return match ? Number(match[0]) : null;
 }
 
-interface GoogleBooksResponse {
-  items?: Array<{
-    volumeInfo?: {
-      title?: string;
-      authors?: string[];
-      publisher?: string;
-      publishedDate?: string;
-      description?: string;
-      categories?: string[];
-      imageLinks?: { thumbnail?: string; smallThumbnail?: string };
-      pageCount?: number;
-      language?: string;
-    };
-  }>;
+interface GoogleVolumeInfo {
+  title?: string;
+  authors?: string[];
+  publisher?: string;
+  publishedDate?: string;
+  description?: string;
+  categories?: string[];
+  imageLinks?: { thumbnail?: string; smallThumbnail?: string };
+  pageCount?: number;
+  language?: string;
 }
 
-async function lookupGoogleBooks(isbn: string): Promise<BookLookupResult | null> {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
-  const keyParam = apiKey ? `&key=${encodeURIComponent(apiKey)}` : '';
-  const res = await fetchWithTimeout(
-    `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}${keyParam}`
-  );
-  if (!res) return null;
+interface GoogleBooksResponse {
+  items?: Array<{ volumeInfo?: GoogleVolumeInfo }>;
+}
 
-  const data = (await res.json().catch(() => null)) as GoogleBooksResponse | null;
-  const info = data?.items?.[0]?.volumeInfo;
+function mapGoogleVolumeInfo(info: GoogleVolumeInfo | undefined): BookLookupResult | null {
   if (!info?.title) return null;
-
   return {
     title: info.title,
     author: info.authors?.join(', ') ?? null,
@@ -71,6 +61,40 @@ async function lookupGoogleBooks(isbn: string): Promise<BookLookupResult | null>
     pageCount: info.pageCount ?? null,
     language: info.language ?? null,
   };
+}
+
+function googleBooksKeyParam(): string {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
+  return apiKey ? `&key=${encodeURIComponent(apiKey)}` : '';
+}
+
+async function lookupGoogleBooks(isbn: string): Promise<BookLookupResult | null> {
+  const res = await fetchWithTimeout(
+    `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}${googleBooksKeyParam()}`
+  );
+  if (!res) return null;
+
+  const data = (await res.json().catch(() => null)) as GoogleBooksResponse | null;
+  return mapGoogleVolumeInfo(data?.items?.[0]?.volumeInfo);
+}
+
+// Used as a fallback when a book has no readable ISBN (e.g. AI cover
+// recognition only extracts title/author) — deliberately Google-Books-only,
+// unlike lookupIsbn's dual-source approach: title/author matching is already
+// fuzzier than exact-ISBN matching, so a second fuzzy source would compound
+// ambiguity rather than provide a safety net.
+export async function searchByTitleAuthor(title: string, author: string | null): Promise<BookLookupResult | null> {
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) return null;
+
+  let q = `intitle:${encodeURIComponent(trimmedTitle)}`;
+  if (author?.trim()) q += `+inauthor:${encodeURIComponent(author.trim())}`;
+
+  const res = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=${q}${googleBooksKeyParam()}`);
+  if (!res) return null;
+
+  const data = (await res.json().catch(() => null)) as GoogleBooksResponse | null;
+  return mapGoogleVolumeInfo(data?.items?.[0]?.volumeInfo);
 }
 
 interface OpenLibraryEntry {

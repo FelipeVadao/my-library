@@ -101,7 +101,11 @@ Vibração tátil (`navigator.vibrate`) ao confirmar um registro, se suportado p
 - Duas fontes consultadas **em paralelo** (não em sequência, para não somar as latências no pior caso): Google Books API (primária) e Open Library (fallback), com timeout de 12s cada (ajustado empiricamente — 6s cortava respostas legítimas da Open Library, observadas entre 1.7s e 9.1s).
 - Resultado: o da Google Books se disponível, senão o da Open Library, senão `null` (usuário preenche manualmente).
 - Chave da Google Books API é opcional (`NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY`); sem ela, funciona sem key (rate limit mais baixo) e ainda tem a Open Library como rede de segurança.
-- Nenhum OCR é usado em nenhum lugar do app — apenas leitura de código de barras + APIs externas.
+- `searchByTitleAuthor(title, author)` reusa a mesma resposta do endpoint Google Books (`intitle:`/`inauthor:`), só Google Books — sem Open Library como fallback, já que busca por título é mais "fuzzy" que por ISBN exato. Usada pelo fluxo de reconhecimento de capa por IA (ver 5.3.1).
+
+### 5.3.1 OCR de ISBN e reconhecimento de capa por IA (`src/lib/isbnOcr.ts`, `src/app/scan/actions.ts`)
+- Fallback para quando o código de barras não escaneia: botão "Fotografar o ISBN" tira uma foto do número impresso, roda OCR 100% client-side via `tesseract.js` (`recognizeIsbnFromImage`), extrai um ISBN-10/13 com checksum válido (`extractIsbnFromText`) e alimenta o mesmo pipeline de lookup do código de barras. Sem custo, sem IA, sem chamada de rede além do próprio lookup.
+- Fallback para livros sem ISBN legível: botão "Identificar pela capa" tira uma foto da capa e envia uma cópia reduzida (máx. ~1024px) para `identifyBookFromCover` (Server Action em `src/app/scan/actions.ts`), que chama um modelo Gemini via Vercel AI SDK + AI Gateway (`generateText` + `Output.object`) pedindo só título/autor — os demais campos (sinopse, gênero, páginas) vêm de `searchByTitleAuthor`, não da IA, para evitar alucinação de dados factuais. Erros do gateway (cota esgotada, rate limit) degradam para "não identificado" em vez de falhar.
 
 ### 5.4 Fila offline-first (`src/lib/bookQueue.ts`)
 - Livros escaneados são gravados primeiro em `localStorage` (chave `my_library_book_queue`), não diretamente no Supabase — o app funciona sem conexão.
@@ -154,13 +158,13 @@ Toda a agregação é feita em memória no servidor a cada request (`export cons
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim | Chave anônima (client-side, RLS aplica isolamento) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Presente no `.env.example` | Não usada no código ativo hoje (RLS por `operator_id` cobre os casos atuais); reservada caso um acesso privilegiado no servidor seja necessário no futuro |
 | `NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY` | Não | Sem ela, lookup usa só Open Library como fallback |
+| `AI_GATEWAY_API_KEY` | Necessária para o reconhecimento de capa por IA | Chave da Vercel AI Gateway (Settings → AI Gateway → API Keys); sem ela, esse fluxo falha graciosamente para "não identificado" — o OCR de ISBN não depende dela |
 
 ## 8. O que explicitamente NÃO existe hoje
 
 Para deixar claro o escopo atual e evitar assumir funcionalidades que não foram implementadas:
 
 - Sem multi-usuário compartilhado / biblioteca em grupo / papéis (admin vs. operador) — é 100% dados isolados por `operator_id`.
-- Sem OCR de capa ou texto.
 - Sem app mobile nativo — é PWA-like (manifest.json, ícones, `apple-web-app` meta tags) rodando em navegador mobile.
 - Testes unitários (Vitest) cobrem apenas a lógica de negócio pura — ISBN lookup, fila offline, métricas do dashboard, exportação CSV e o gate de autenticação do middleware. Não há testes de UI/E2E: Server Components assíncronos (o dashboard) não são suportados por Jest/Vitest, e componentes client-side com chamadas Supabase ao vivo (`/books`) ficam fora de escopo por ora.
 - Sem CI/CD configurado além do deploy Vercel padrão.

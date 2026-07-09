@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { lookupIsbn } from './booksApi';
+import { lookupIsbn, searchByTitleAuthor } from './booksApi';
 
 function jsonResponse(body: unknown, ok = true): Response {
   return {
@@ -144,5 +144,96 @@ describe('lookupIsbn', () => {
 
     const googleCall = fetchMock.mock.calls.find(([url]) => GOOGLE_URL.test(url as string));
     expect(googleCall?.[0]).toContain('&key=test-key');
+  });
+});
+
+describe('searchByTitleAuthor', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('builds the query with both title and author', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({ items: [] })));
+
+    await searchByTitleAuthor('Dom Casmurro', 'Machado de Assis');
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain('intitle:Dom%20Casmurro');
+    expect(url).toContain('inauthor:Machado%20de%20Assis');
+  });
+
+  it('omits inauthor when author is null', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({ items: [] })));
+
+    await searchByTitleAuthor('Dom Casmurro', null);
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).not.toContain('inauthor:');
+  });
+
+  it('returns null without calling fetch when title is blank', async () => {
+    const result = await searchByTitleAuthor('   ', null);
+    expect(result).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('maps the first result to BookLookupResult', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        jsonResponse({
+          items: [
+            {
+              volumeInfo: {
+                title: 'Dom Casmurro',
+                authors: ['Machado de Assis'],
+                publisher: 'Editora X',
+                publishedDate: '1899',
+                description: 'Synopsis',
+                categories: ['Fiction'],
+                imageLinks: { thumbnail: 'http://books.google.com/cover.jpg' },
+                pageCount: 256,
+                language: 'pt',
+              },
+            },
+          ],
+        })
+      )
+    );
+
+    const result = await searchByTitleAuthor('Dom Casmurro', 'Machado de Assis');
+
+    expect(result).toEqual({
+      title: 'Dom Casmurro',
+      author: 'Machado de Assis',
+      publisher: 'Editora X',
+      publishedYear: 1899,
+      genre: 'Fiction',
+      synopsis: 'Synopsis',
+      coverUrl: 'https://books.google.com/cover.jpg',
+      pageCount: 256,
+      language: 'pt',
+    });
+  });
+
+  it('returns null when no items are found', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({ items: [] })));
+
+    const result = await searchByTitleAuthor('Nonexistent Book', null);
+    expect(result).toBeNull();
+  });
+
+  it('returns null on network error', async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new Error('network down')));
+
+    const result = await searchByTitleAuthor('Dom Casmurro', null);
+    expect(result).toBeNull();
   });
 });
