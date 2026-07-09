@@ -33,7 +33,10 @@ export default function RealtimeCounter({ initialCount, operatorId }: Props) {
     <div className="lamp-glow rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-brass-strong p-5 flex flex-col gap-1">
       <span className="text-sm text-on-accent/80 font-medium">Livros adicionados hoje (tempo real)</span>
       <span className="font-serif text-3xl font-bold text-on-accent">{count.toLocaleString('pt-BR')}</span>
-      <span className="text-xs text-on-accent/80">● ao vivo</span>
+      <span className="flex items-center gap-1.5 text-xs text-on-accent/80">
+        <span className="w-2 h-2 rounded-full bg-forest animate-pulse" aria-hidden="true" />
+        ao vivo
+      </span>
     </div>
   );
 }

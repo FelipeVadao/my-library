@@ -1,5 +1,8 @@
 'use client';
 
+import { Sparkles } from 'lucide-react';
+import EmptyState from './EmptyState';
+
 interface Props {
   recommendations: string[];
 }
@@ -9,7 +12,7 @@ export default function RecommendationsList({ recommendations }: Props) {
     <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5">
       <h3 className="text-sm font-medium text-ink-muted mb-4">Recomendações</h3>
       {recommendations.length === 0 ? (
-        <p className="text-ink-muted text-sm">Tudo em dia, nenhuma recomendação no momento.</p>
+        <EmptyState icon={Sparkles} message="Tudo em dia, nenhuma recomendação no momento." />
       ) : (
         <ul className="space-y-3">
           {recommendations.map((r, i) => (

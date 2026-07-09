@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 type Status = 'checking' | 'ready' | 'invalid' | 'saving' | 'done';
@@ -48,7 +49,10 @@ export default function ResetPasswordPage() {
         <h1 className="font-serif text-2xl font-bold text-ink text-center mb-1">Nova senha</h1>
 
         {status === 'checking' && (
-          <p className="text-ink-muted text-sm text-center mt-6">Verificando link...</p>
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <Loader2 size={16} className="animate-spin text-ink-muted" />
+            <p className="text-ink-muted text-sm">Verificando link...</p>
+          </div>
         )}
 
         {status === 'invalid' && (
@@ -60,7 +64,9 @@ export default function ResetPasswordPage() {
         {(status === 'ready' || status === 'saving') && (
           <>
             <p className="text-ink-muted text-sm text-center mb-8">Escolha sua nova senha</p>
+            <label htmlFor="new-password" className="sr-only">Nova senha</label>
             <input
+              id="new-password"
               type="password"
               placeholder="Nova senha"
               value={password}
@@ -74,7 +80,9 @@ export default function ResetPasswordPage() {
               disabled={status === 'saving'}
               className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-on-accent font-semibold py-3 rounded-md transition"
             >
-              {status === 'saving' ? 'Salvando...' : 'Salvar nova senha'}
+              {status === 'saving' ? (
+                <span className="inline-flex items-center gap-2 justify-center"><Loader2 size={14} className="animate-spin" />Salvando...</span>
+              ) : 'Salvar nova senha'}
             </button>
           </>
         )}

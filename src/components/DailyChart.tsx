@@ -4,12 +4,13 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 
 interface Props {
   data: { date: string; count: number }[];
+  title?: string;
 }
 
-export default function DailyChart({ data }: Props) {
+export default function DailyChart({ data, title = 'Livros adicionados (últimos 30 dias)' }: Props) {
   return (
     <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5">
-      <h3 className="text-sm font-medium text-ink-muted mb-4">Livros adicionados (últimos 30 dias)</h3>
+      <h3 className="text-sm font-medium text-ink-muted mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.6} />

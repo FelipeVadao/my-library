@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Star, X, Loader2 } from 'lucide-react';
 import type { Book, ReadingStatus } from '@/lib/supabase/types';
 import { updateBook } from '@/app/actions';
 
@@ -26,6 +27,11 @@ type EditForm = {
   finishedYear: string;
   loanedTo: string;
   loanedAt: string;
+  favorite: boolean;
+  startedAt: string;
+  pageCount: string;
+  currentPage: string;
+  language: string;
 };
 
 function bookToForm(book: Book): EditForm {
@@ -50,6 +56,11 @@ function bookToForm(book: Book): EditForm {
     finishedYear,
     loanedTo: book.loaned_to ?? '',
     loanedAt: book.loaned_at ? book.loaned_at.slice(0, 10) : '',
+    favorite: book.favorite,
+    startedAt: book.started_at ? book.started_at.slice(0, 10) : '',
+    pageCount: book.page_count ? String(book.page_count) : '',
+    currentPage: book.current_page != null ? String(book.current_page) : '',
+    language: book.language ?? '',
   };
 }
 
@@ -57,6 +68,39 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
   const [form, setForm] = useState<EditForm>(() => bookToForm(book));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const pageCountNum = Number(form.pageCount);
+  const currentPageNum = Number(form.currentPage);
+  const progressPercent =
+    form.readingStatus === 'lendo' && pageCountNum > 0 && form.currentPage !== ''
+      ? Math.min(100, Math.round((currentPageNum / pageCountNum) * 100))
+      : null;
 
   async function handleSubmit() {
     const title = form.title.trim();
@@ -65,6 +109,7 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
     setError('');
 
     const isLido = form.readingStatus === 'lido';
+    const hasStarted = form.readingStatus !== 'quero_ler';
     const finishedAt = isLido && form.finishedYear
       ? new Date(Number(form.finishedYear), 0, 1).toISOString()
       : null;
@@ -89,6 +134,11 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
       finished_at: finishedAt,
       loaned_to: loanedTo,
       loaned_at: loanedAt,
+      favorite: form.favorite,
+      started_at: hasStarted && form.startedAt ? new Date(form.startedAt).toISOString() : null,
+      page_count: form.pageCount ? Number(form.pageCount) : null,
+      current_page: hasStarted && form.currentPage ? Number(form.currentPage) : null,
+      language: form.language.trim() || null,
     });
 
     setSaving(false);
@@ -103,23 +153,45 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-book-modal-title"
         className="bg-paper-card rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-border shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-lg font-bold text-ink">Editar livro</h2>
-          <button onClick={onClose} className="text-ink-muted hover:text-ink text-xl leading-none">×</button>
+          <h2 id="edit-book-modal-title" className="font-serif text-lg font-bold text-ink">Editar livro</h2>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, favorite: !f.favorite }))}
+              aria-label={form.favorite ? 'Remover dos favoritos' : 'Marcar como favorito'}
+              title={form.favorite ? 'Remover dos favoritos' : 'Marcar como favorito'}
+              className={form.favorite ? 'text-brass-strong' : 'text-border'}
+            >
+              <Star size={22} fill={form.favorite ? 'currentColor' : 'none'} />
+            </button>
+            <button onClick={onClose} aria-label="Fechar" className="text-ink-muted hover:text-ink">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">
           {form.coverUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={form.coverUrl} alt="Capa do livro" className="h-32 rounded-lg mx-auto" />
+            <img
+              src={form.coverUrl}
+              alt={form.title ? `Capa de ${form.title}` : 'Capa do livro'}
+              className="h-32 rounded-lg mx-auto"
+            />
           )}
 
           <div>
-            <label className="block text-ink-muted text-xs mb-1">ISBN</label>
+            <label htmlFor="edit-isbn" className="block text-ink-muted text-xs mb-1">ISBN</label>
             <input
+              id="edit-isbn"
               type="text"
               value={form.isbn}
               onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
@@ -128,8 +200,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-ink-muted text-xs mb-1">Título</label>
+            <label htmlFor="edit-title" className="block text-ink-muted text-xs mb-1">Título</label>
             <input
+              id="edit-title"
               type="text"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -139,8 +212,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-ink-muted text-xs mb-1">Autor</label>
+            <label htmlFor="edit-author" className="block text-ink-muted text-xs mb-1">Autor</label>
             <input
+              id="edit-author"
               type="text"
               value={form.author}
               onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))}
@@ -150,8 +224,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-ink-muted text-xs mb-1">Editora</label>
+              <label htmlFor="edit-publisher" className="block text-ink-muted text-xs mb-1">Editora</label>
               <input
+                id="edit-publisher"
                 type="text"
                 value={form.publisher}
                 onChange={(e) => setForm((f) => ({ ...f, publisher: e.target.value }))}
@@ -159,8 +234,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
               />
             </div>
             <div>
-              <label className="block text-ink-muted text-xs mb-1">Ano de publicação</label>
+              <label htmlFor="edit-published-year" className="block text-ink-muted text-xs mb-1">Ano de publicação</label>
               <input
+                id="edit-published-year"
                 type="number"
                 value={form.publishedYear}
                 onChange={(e) => setForm((f) => ({ ...f, publishedYear: e.target.value }))}
@@ -170,8 +246,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-ink-muted text-xs mb-1">Gênero</label>
+            <label htmlFor="edit-genre" className="block text-ink-muted text-xs mb-1">Gênero</label>
             <input
+              id="edit-genre"
               type="text"
               value={form.genre}
               onChange={(e) => setForm((f) => ({ ...f, genre: e.target.value }))}
@@ -179,9 +256,34 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="edit-page-count" className="block text-ink-muted text-xs mb-1">Páginas totais</label>
+              <input
+                id="edit-page-count"
+                type="number"
+                min={1}
+                value={form.pageCount}
+                onChange={(e) => setForm((f) => ({ ...f, pageCount: e.target.value }))}
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
+              />
+            </div>
+            <div>
+              <label htmlFor="edit-language" className="block text-ink-muted text-xs mb-1">Idioma</label>
+              <input
+                id="edit-language"
+                type="text"
+                value={form.language}
+                onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-ink-muted text-xs mb-1">Sinopse</label>
+            <label htmlFor="edit-synopsis" className="block text-ink-muted text-xs mb-1">Sinopse</label>
             <textarea
+              id="edit-synopsis"
               value={form.synopsis}
               onChange={(e) => setForm((f) => ({ ...f, synopsis: e.target.value }))}
               rows={2}
@@ -190,8 +292,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-ink-muted text-xs mb-1">Resumo do leitor</label>
+            <label htmlFor="edit-reader-summary" className="block text-ink-muted text-xs mb-1">Resumo do leitor</label>
             <textarea
+              id="edit-reader-summary"
               value={form.readerSummary}
               onChange={(e) => setForm((f) => ({ ...f, readerSummary: e.target.value }))}
               rows={4}
@@ -202,8 +305,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-ink-muted text-xs mb-1">Capa (URL)</label>
+            <label htmlFor="edit-cover-url" className="block text-ink-muted text-xs mb-1">Capa (URL)</label>
             <input
+              id="edit-cover-url"
               type="text"
               value={form.coverUrl}
               onChange={(e) => setForm((f) => ({ ...f, coverUrl: e.target.value }))}
@@ -213,8 +317,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-ink-muted text-xs mb-1">Cópias</label>
+              <label htmlFor="edit-copies" className="block text-ink-muted text-xs mb-1">Cópias</label>
               <input
+                id="edit-copies"
                 type="number"
                 min={1}
                 value={form.copies}
@@ -223,8 +328,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
               />
             </div>
             <div>
-              <label className="block text-ink-muted text-xs mb-1">Status de leitura</label>
+              <label htmlFor="edit-reading-status" className="block text-ink-muted text-xs mb-1">Status de leitura</label>
               <select
+                id="edit-reading-status"
                 value={form.readingStatus}
                 onChange={(e) => {
                   const next = e.target.value as ReadingStatus;
@@ -243,6 +349,43 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
             </div>
           </div>
 
+          {form.readingStatus !== 'quero_ler' && (
+            <div>
+              <label htmlFor="edit-started-at" className="block text-ink-muted text-xs mb-1">Data de início</label>
+              <input
+                id="edit-started-at"
+                type="date"
+                value={form.startedAt}
+                onChange={(e) => setForm((f) => ({ ...f, startedAt: e.target.value }))}
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
+              />
+            </div>
+          )}
+
+          {form.readingStatus === 'lendo' && (
+            <div>
+              <label htmlFor="edit-current-page" className="block text-ink-muted text-xs mb-1">
+                Página atual{form.pageCount && ` (de ${form.pageCount})`}
+              </label>
+              <input
+                id="edit-current-page"
+                type="number"
+                min={0}
+                value={form.currentPage}
+                onChange={(e) => setForm((f) => ({ ...f, currentPage: e.target.value }))}
+                className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
+              />
+              {progressPercent !== null && (
+                <div className="mt-2">
+                  <div className="h-2 bg-tan rounded-full overflow-hidden">
+                    <div className="h-full bg-brass-strong" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                  <p className="text-[10px] text-ink-muted mt-1">{progressPercent}% concluído</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {form.readingStatus === 'lido' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -253,17 +396,19 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
                       key={n}
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, rating: n === f.rating ? 0 : n }))}
-                      className={`text-2xl leading-none ${n <= form.rating ? 'text-brass-strong' : 'text-border'}`}
+                      aria-label={`Avaliar com ${n} estrela(s)`}
+                      className={n <= form.rating ? 'text-brass-strong' : 'text-border'}
                     >
-                      ★
+                      <Star size={22} fill={n <= form.rating ? 'currentColor' : 'none'} />
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-ink-muted text-xs mb-1">Ano de leitura</label>
+                <label htmlFor="edit-finished-year" className="block text-ink-muted text-xs mb-1">Ano de leitura</label>
                 <div className="flex gap-2 items-center">
                   <input
+                    id="edit-finished-year"
                     type="number"
                     value={form.finishedYear}
                     onChange={(e) => setForm((f) => ({ ...f, finishedYear: e.target.value }))}
@@ -287,8 +432,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
             <p className="text-ink-muted text-xs mb-2">Empréstimo</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-ink-muted text-xs mb-1">Emprestado para</label>
+                <label htmlFor="edit-loaned-to" className="block text-ink-muted text-xs mb-1">Emprestado para</label>
                 <input
+                  id="edit-loaned-to"
                   type="text"
                   value={form.loanedTo}
                   onChange={(e) => setForm((f) => ({ ...f, loanedTo: e.target.value }))}
@@ -296,8 +442,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-ink-muted text-xs mb-1">Data do empréstimo</label>
+                <label htmlFor="edit-loaned-at" className="block text-ink-muted text-xs mb-1">Data do empréstimo</label>
                 <input
+                  id="edit-loaned-at"
                   type="date"
                   value={form.loanedAt}
                   onChange={(e) => setForm((f) => ({ ...f, loanedAt: e.target.value }))}
@@ -322,7 +469,9 @@ export default function EditBookModal({ book, onClose, onSaved }: Props) {
             disabled={saving || !form.title.trim()}
             className="flex-1 py-3 rounded-md font-semibold text-sm bg-forest hover:bg-forest-hover disabled:opacity-40 text-on-accent transition"
           >
-            {saving ? 'Salvando...' : 'Salvar alterações'}
+            {saving ? (
+              <span className="inline-flex items-center gap-2 justify-center"><Loader2 size={14} className="animate-spin" />Salvando...</span>
+            ) : 'Salvar alterações'}
           </button>
         </div>
       </div>

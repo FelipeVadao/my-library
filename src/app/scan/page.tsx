@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Star, ArrowLeft, Loader2 } from 'lucide-react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 import type { IScannerControls } from '@zxing/browser';
@@ -64,6 +65,8 @@ const EMPTY_FORM = {
   readingStatus: 'quero_ler' as ReadingStatus,
   rating: 0,
   finishedYear: '',
+  pageCount: '',
+  language: '',
 };
 
 // ── component ────────────────────────────────────────────────────────────────
@@ -130,6 +133,8 @@ export default function ScanPage() {
         readingStatus: 'quero_ler',
         rating: 0,
         finishedYear: '',
+        pageCount: result.pageCount ? String(result.pageCount) : '',
+        language: result.language ?? '',
       });
     } else {
       setLookupNotFound(true);
@@ -265,6 +270,11 @@ export default function ScanPage() {
       finished_at: form.readingStatus === 'lido' && form.finishedYear
         ? new Date(Number(form.finishedYear), 0, 1).toISOString()
         : null,
+      favorite: false,
+      started_at: null,
+      page_count: form.pageCount ? Number(form.pageCount) : null,
+      current_page: null,
+      language: form.language.trim() || null,
       added_at: new Date().toISOString(),
       operator_id: session.user.id,
     };
@@ -448,7 +458,7 @@ export default function ScanPage() {
   if (view === 'loading') {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brass-strong border-t-transparent rounded-full animate-spin" />
+        <Loader2 size={32} className="animate-spin text-brass-strong" />
       </div>
     );
   }
@@ -473,7 +483,9 @@ export default function ScanPage() {
           <h1 className="font-serif text-2xl font-bold text-ink text-center mb-1">{titles[authMode]}</h1>
           <p className="text-ink-muted text-sm text-center mb-8">{subtitles[authMode]}</p>
 
+          <label htmlFor="login-email" className="sr-only">E-mail</label>
           <input
+            id="login-email"
             type="email"
             placeholder="E-mail"
             value={email}
@@ -483,7 +495,10 @@ export default function ScanPage() {
           />
 
           {authMode !== 'forgot' && (
+            <>
+            <label htmlFor="login-password" className="sr-only">Senha</label>
             <input
+              id="login-password"
               type="password"
               placeholder="Senha"
               value={password}
@@ -491,6 +506,7 @@ export default function ScanPage() {
               onKeyDown={(e) => e.key === 'Enter' && (authMode === 'signup' ? handleSignup() : handleLogin())}
               className="w-full bg-paper border border-border rounded-md px-4 py-3 text-ink placeholder-ink-muted mb-4 focus:outline-none focus:border-brass-strong"
             />
+            </>
           )}
 
           {authMsg && (
@@ -524,7 +540,9 @@ export default function ScanPage() {
               disabled={logging}
               className="w-full bg-brass-strong hover:bg-brass-strong-hover disabled:opacity-50 text-on-accent font-semibold py-3 rounded-md transition"
             >
-              {logging ? 'Enviando...' : 'Enviar link de recuperação'}
+              {logging ? (
+                <span className="inline-flex items-center gap-2 justify-center"><Loader2 size={14} className="animate-spin" />Enviando...</span>
+              ) : 'Enviar link de recuperação'}
             </button>
           )}
 
@@ -539,15 +557,15 @@ export default function ScanPage() {
                 </button>
               </>
             ) : (
-              <button onClick={() => switchMode('login')} className="text-brass-strong hover:text-brass-strong-hover transition">
-                ← Voltar ao login
+              <button onClick={() => switchMode('login')} className="flex items-center gap-1 text-brass-strong hover:text-brass-strong-hover transition">
+                <ArrowLeft size={14} aria-hidden="true" /> Voltar ao login
               </button>
             )}
           </div>
         </div>
 
-        <Link href="/" className="mt-6 text-ink-muted hover:text-ink text-sm transition">
-          ← Voltar ao Dashboard
+        <Link href="/" className="mt-6 flex items-center gap-1 text-ink-muted hover:text-ink text-sm transition">
+          <ArrowLeft size={14} aria-hidden="true" /> Voltar ao Dashboard
         </Link>
 
         <div className="mt-4">
@@ -563,8 +581,8 @@ export default function ScanPage() {
     <div className="min-h-screen bg-paper flex flex-col">
       {/* header */}
       <div className="bg-paper-card px-4 pt-12 pb-3 flex items-center justify-between gap-3">
-        <Link href="/" className="text-brass-strong text-sm font-medium shrink-0">
-          ← Dashboard
+        <Link href="/" className="flex items-center gap-1 text-brass-strong text-sm font-medium shrink-0">
+          <ArrowLeft size={16} aria-hidden="true" /> Dashboard
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="font-serif text-ink font-bold text-base leading-tight">Scanner</h1>
@@ -614,7 +632,7 @@ export default function ScanPage() {
 
         {view === 'lookup' && (
           <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
-            <div className="w-10 h-10 border-4 border-brass border-t-transparent rounded-full animate-spin" />
+            <Loader2 size={40} className="animate-spin text-brass" />
             <span className="text-ink text-sm font-medium">Buscando informações do livro...</span>
           </div>
         )}
@@ -649,12 +667,17 @@ export default function ScanPage() {
 
             {form.coverUrl && !capturingCover && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={form.coverUrl} alt="Capa do livro" className="h-32 rounded-lg mx-auto" />
+              <img
+                src={form.coverUrl}
+                alt={form.title ? `Capa de ${form.title}` : 'Capa do livro'}
+                className="h-32 rounded-lg mx-auto"
+              />
             )}
 
             <div>
-              <label className="block text-ink-muted text-xs mb-1">ISBN</label>
+              <label htmlFor="scan-isbn" className="block text-ink-muted text-xs mb-1">ISBN</label>
               <input
+                id="scan-isbn"
                 type="text"
                 value={form.isbn}
                 onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
@@ -663,8 +686,9 @@ export default function ScanPage() {
             </div>
 
             <div>
-              <label className="block text-ink-muted text-xs mb-1">Título</label>
+              <label htmlFor="scan-title" className="block text-ink-muted text-xs mb-1">Título</label>
               <input
+                id="scan-title"
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -674,8 +698,9 @@ export default function ScanPage() {
             </div>
 
             <div>
-              <label className="block text-ink-muted text-xs mb-1">Autor</label>
+              <label htmlFor="scan-author" className="block text-ink-muted text-xs mb-1">Autor</label>
               <input
+                id="scan-author"
                 type="text"
                 value={form.author}
                 onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))}
@@ -685,8 +710,9 @@ export default function ScanPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-ink-muted text-xs mb-1">Editora</label>
+                <label htmlFor="scan-publisher" className="block text-ink-muted text-xs mb-1">Editora</label>
                 <input
+                  id="scan-publisher"
                   type="text"
                   value={form.publisher}
                   onChange={(e) => setForm((f) => ({ ...f, publisher: e.target.value }))}
@@ -694,8 +720,9 @@ export default function ScanPage() {
                 />
               </div>
               <div>
-                <label className="block text-ink-muted text-xs mb-1">Ano</label>
+                <label htmlFor="scan-published-year" className="block text-ink-muted text-xs mb-1">Ano</label>
                 <input
+                  id="scan-published-year"
                   type="number"
                   value={form.publishedYear}
                   onChange={(e) => setForm((f) => ({ ...f, publishedYear: e.target.value }))}
@@ -705,8 +732,9 @@ export default function ScanPage() {
             </div>
 
             <div>
-              <label className="block text-ink-muted text-xs mb-1">Gênero</label>
+              <label htmlFor="scan-genre" className="block text-ink-muted text-xs mb-1">Gênero</label>
               <input
+                id="scan-genre"
                 type="text"
                 value={form.genre}
                 onChange={(e) => setForm((f) => ({ ...f, genre: e.target.value }))}
@@ -715,13 +743,38 @@ export default function ScanPage() {
             </div>
 
             <div>
-              <label className="block text-ink-muted text-xs mb-1">Sinopse</label>
+              <label htmlFor="scan-synopsis" className="block text-ink-muted text-xs mb-1">Sinopse</label>
               <textarea
+                id="scan-synopsis"
                 value={form.synopsis}
                 onChange={(e) => setForm((f) => ({ ...f, synopsis: e.target.value }))}
                 rows={2}
                 className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="scan-page-count" className="block text-ink-muted text-xs mb-1">Páginas</label>
+                <input
+                  id="scan-page-count"
+                  type="number"
+                  min={1}
+                  value={form.pageCount}
+                  onChange={(e) => setForm((f) => ({ ...f, pageCount: e.target.value }))}
+                  className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
+                />
+              </div>
+              <div>
+                <label htmlFor="scan-language" className="block text-ink-muted text-xs mb-1">Idioma</label>
+                <input
+                  id="scan-language"
+                  type="text"
+                  value={form.language}
+                  onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
+                  className="w-full bg-paper border border-border rounded-md px-3 py-2 text-ink focus:outline-none focus:border-brass-strong"
+                />
+              </div>
             </div>
 
             {!form.coverUrl && !capturingCover && (
@@ -730,14 +783,17 @@ export default function ScanPage() {
                 disabled={uploadingCover}
                 className="w-full py-2 rounded-md text-sm font-semibold bg-tan hover:bg-border disabled:opacity-40 text-ink transition"
               >
-                {uploadingCover ? 'Enviando foto...' : 'Tirar foto da capa'}
+                {uploadingCover ? (
+                  <span className="inline-flex items-center gap-2 justify-center"><Loader2 size={14} className="animate-spin" />Enviando foto...</span>
+                ) : 'Tirar foto da capa'}
               </button>
             )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-ink-muted text-xs mb-1">Cópias</label>
+                <label htmlFor="scan-copies" className="block text-ink-muted text-xs mb-1">Cópias</label>
                 <input
+                  id="scan-copies"
                   type="number"
                   min={1}
                   value={form.copies}
@@ -746,8 +802,9 @@ export default function ScanPage() {
                 />
               </div>
               <div>
-                <label className="block text-ink-muted text-xs mb-1">Status de leitura</label>
+                <label htmlFor="scan-reading-status" className="block text-ink-muted text-xs mb-1">Status de leitura</label>
                 <select
+                  id="scan-reading-status"
                   value={form.readingStatus}
                   onChange={(e) => {
                     const next = e.target.value as ReadingStatus;
@@ -776,17 +833,19 @@ export default function ScanPage() {
                         key={n}
                         type="button"
                         onClick={() => setForm((f) => ({ ...f, rating: n }))}
-                        className={`text-2xl leading-none ${n <= form.rating ? 'text-brass-strong' : 'text-border'}`}
+                        aria-label={`Avaliar com ${n} estrela(s)`}
+                        className={n <= form.rating ? 'text-brass-strong' : 'text-border'}
                       >
-                        ★
+                        <Star size={22} fill={n <= form.rating ? 'currentColor' : 'none'} />
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-ink-muted text-xs mb-1">Ano de leitura</label>
+                  <label htmlFor="scan-finished-year" className="block text-ink-muted text-xs mb-1">Ano de leitura</label>
                   <div className="flex gap-2 items-center">
                     <input
+                      id="scan-finished-year"
                       type="number"
                       value={form.finishedYear}
                       onChange={(e) => setForm((f) => ({ ...f, finishedYear: e.target.value }))}
@@ -844,7 +903,9 @@ export default function ScanPage() {
                 disabled={syncing || pending === 0}
                 className="flex-1 py-3 rounded-md font-semibold text-sm bg-tan hover:bg-border disabled:opacity-40 text-ink transition"
               >
-                {syncing ? 'Enviando...' : pending > 0 ? `Enviar (${pending})` : 'Enviar'}
+                {syncing ? (
+                  <span className="inline-flex items-center gap-2 justify-center"><Loader2 size={14} className="animate-spin" />Enviando...</span>
+                ) : pending > 0 ? `Enviar (${pending})` : 'Enviar'}
               </button>
               <Link
                 href="/books"

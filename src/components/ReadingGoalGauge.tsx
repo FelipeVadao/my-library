@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import ScoreGauge from './ScoreGauge';
 import { updateReadingGoal } from '@/app/actions';
 
@@ -59,7 +60,9 @@ export default function ReadingGoalGauge({ value, initialGoal }: Props) {
             disabled={saving}
             className="flex-1 py-2 rounded-md text-sm font-semibold bg-forest hover:bg-forest-hover disabled:opacity-40 text-on-accent transition"
           >
-            {saving ? 'Salvando...' : 'Salvar'}
+            {saving ? (
+              <span className="inline-flex items-center gap-2 justify-center"><Loader2 size={14} className="animate-spin" />Salvando...</span>
+            ) : 'Salvar'}
           </button>
         </div>
       </div>

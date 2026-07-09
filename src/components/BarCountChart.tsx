@@ -3,17 +3,18 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface Props {
-  data: { stars: string; count: number }[];
+  data: { label: string; count: number }[];
+  title: string;
 }
 
-export default function RatingDistributionChart({ data }: Props) {
+export default function BarCountChart({ data, title }: Props) {
   return (
     <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5">
-      <h3 className="text-sm font-medium text-ink-muted mb-4">Distribuição de notas (livros lidos)</h3>
+      <h3 className="text-sm font-medium text-ink-muted mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.6} />
-          <XAxis dataKey="stars" tick={{ fill: 'var(--color-ink-muted)', fontSize: 11 }} />
+          <XAxis dataKey="label" tick={{ fill: 'var(--color-ink-muted)', fontSize: 11 }} />
           <YAxis tick={{ fill: 'var(--color-ink-muted)', fontSize: 11 }} allowDecimals={false} />
           <Tooltip
             contentStyle={{ backgroundColor: 'var(--color-paper-card)', border: '1px solid var(--color-border)', borderRadius: 8 }}

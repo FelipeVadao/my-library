@@ -1,5 +1,8 @@
 'use client';
 
+import { CheckCircle2 } from 'lucide-react';
+import EmptyState from './EmptyState';
+
 interface Alert {
   title: string;
   reason: string;
@@ -23,7 +26,7 @@ export default function AlertsTable({ alerts, title = 'Alertas recentes', emptyM
     <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5">
       <h3 className="text-sm font-medium text-ink-muted mb-4">{title}</h3>
       {alerts.length === 0 ? (
-        <p className="text-ink-muted text-sm">{emptyMessage}</p>
+        <EmptyState icon={CheckCircle2} message={emptyMessage} />
       ) : (
         <div className="space-y-2">
           {alerts.map((a, i) => (

@@ -1,5 +1,8 @@
 'use client';
 
+import { LayoutGrid } from 'lucide-react';
+import EmptyState from './EmptyState';
+
 interface Props {
   genres: string[];
   months: string[];
@@ -13,7 +16,7 @@ export default function GenreMonthHeatmap({ genres, months, matrix }: Props) {
     <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5">
       <h3 className="text-sm font-medium text-ink-muted mb-4">Livros por gênero x mês</h3>
       {genres.length === 0 ? (
-        <p className="text-ink-muted text-sm">Sem dados suficientes ainda.</p>
+        <EmptyState icon={LayoutGrid} message="Sem dados suficientes ainda." />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-xs border-separate" style={{ borderSpacing: 4 }}>

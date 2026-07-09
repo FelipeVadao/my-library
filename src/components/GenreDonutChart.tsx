@@ -1,6 +1,8 @@
 'use client';
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart as PieChartIcon } from 'lucide-react';
+import EmptyState from './EmptyState';
 
 interface Props {
   data: { genre: string; count: number }[];
@@ -13,7 +15,7 @@ export default function GenreDonutChart({ data }: Props) {
     <div className="rounded-lg border border-border shadow-[0_1px_3px_rgba(0,0,0,0.35)] bg-paper-card p-5">
       <h3 className="text-sm font-medium text-ink-muted mb-4">Distribuição por gênero</h3>
       {data.length === 0 ? (
-        <p className="text-ink-muted text-sm">Sem dados suficientes ainda.</p>
+        <EmptyState icon={PieChartIcon} message="Sem dados suficientes ainda." />
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <PieChart>
