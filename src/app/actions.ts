@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { Book } from '@/lib/supabase/types';
+import type { Book, ReadingStatus } from '@/lib/supabase/types';
 
 export type UpdateBookInput = Omit<Book, 'id' | 'operator_id' | 'added_at' | 'updated_at'>;
 
@@ -68,6 +68,38 @@ export async function clearLoan(id: string): Promise<{ error: string | null }> {
   const { error } = await supabase
     .from('books')
     .update({ loaned_to: null, loaned_at: null })
+    .eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+export async function updateReadingStatus(id: string, status: ReadingStatus): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('books')
+    .update({
+      reading_status: status,
+      finished_at: status === 'lido' ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+export async function rateBook(id: string, rating: number): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const clamped = Math.min(5, Math.max(1, Math.trunc(rating)));
+  const { error } = await supabase
+    .from('books')
+    .update({ rating: clamped, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+export async function toggleBookFavorite(id: string, favorite: boolean): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('books')
+    .update({ favorite, updated_at: new Date().toISOString() })
     .eq('id', id);
   return { error: error?.message ?? null };
 }

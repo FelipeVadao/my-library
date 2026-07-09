@@ -56,4 +56,16 @@ describe('updateSession', () => {
     const res = await updateSession(makeRequest('/books'));
     expect(res.headers.get('location')).toBeNull();
   });
+
+  it('redirects unauthenticated users away from "/assistant"', async () => {
+    getUserMock.mockResolvedValue({ data: { user: null } });
+    const res = await updateSession(makeRequest('/assistant'));
+    expect(res.headers.get('location')).toContain('/scan');
+  });
+
+  it('lets authenticated users reach "/assistant"', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    const res = await updateSession(makeRequest('/assistant'));
+    expect(res.headers.get('location')).toBeNull();
+  });
 });

@@ -1,8 +1,10 @@
 'use server';
 
-import { generateText, Output, APICallError } from 'ai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { describeGatewayError } from '@services/ai/errors';
+import { GEMINI_MODEL } from '@services/ai/config';
 
 const CoverIdentificationSchema = z.object({
   title: z.string().nullable(),
@@ -40,7 +42,7 @@ export async function identifyBookFromCover(imageDataUrl: string): Promise<Ident
 
   try {
     const result = await generateText({
-      model: 'google/gemini-3.5-flash',
+      model: GEMINI_MODEL,
       output: Output.object({ schema: CoverIdentificationSchema }),
       messages: [
         {
@@ -61,11 +63,6 @@ export async function identifyBookFromCover(imageDataUrl: string): Promise<Ident
     });
     return { ...result.output, error: null };
   } catch (err) {
-    if (APICallError.isInstance(err)) {
-      if (err.statusCode === 402) return { ...NOT_IDENTIFIED, error: 'Cota de IA esgotada.' };
-      if (err.statusCode === 429) return { ...NOT_IDENTIFIED, error: 'Muitas requisições — tente novamente em instantes.' };
-      return { ...NOT_IDENTIFIED, error: 'Erro ao consultar IA.' };
-    }
-    return { ...NOT_IDENTIFIED, error: 'Não foi possível identificar o livro pela capa.' };
+    return { ...NOT_IDENTIFIED, error: describeGatewayError(err, 'Não foi possível identificar o livro pela capa.') };
   }
 }

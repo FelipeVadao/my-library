@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: '/analytics', label: 'Analytics' },
   { href: '/books', label: 'Meus livros' },
   { href: '/scan', label: 'Scanner' },
+  { href: '/assistant', label: 'Assistente' },
 ];
 
 export default function AppNav() {
