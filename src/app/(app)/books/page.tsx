@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { Star, Loader2, SearchX } from 'lucide-react';
+import { Star, Loader2, SearchX, List, LayoutGrid } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Book, ReadingStatus } from '@/lib/supabase/types';
 import { deleteBook, deleteAllBooks, markBookLoaned, clearLoan } from '@/app/actions';
@@ -60,6 +60,24 @@ export default function BooksPage() {
   const [loanBusy, setLoanBusy] = useState<string | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const lastTriggerRef = useRef<HTMLElement | null>(null);
+
+  const [view, setView] = useState<'table' | 'grid'>(() => {
+    if (typeof window === 'undefined') return 'table';
+    try {
+      return localStorage.getItem('books-view') === 'grid' ? 'grid' : 'table';
+    } catch {
+      return 'table';
+    }
+  });
+
+  function handleSetView(v: 'table' | 'grid') {
+    setView(v);
+    try {
+      localStorage.setItem('books-view', v);
+    } catch {
+      // localStorage indisponível (modo privado etc.) — visão muda na sessão, mas não persiste
+    }
+  }
 
   const [searchInput, setSearchInput] = useState('');
   const debouncedText = useDebouncedValue(searchInput, 300);
@@ -254,6 +272,26 @@ export default function BooksPage() {
           >
             Filtros{hasActiveFilters ? ` (${activeFilterCount})` : ''}
           </button>
+          <div className="shrink-0 flex gap-1 bg-paper-card border border-border rounded-md p-1">
+            <button
+              type="button"
+              onClick={() => handleSetView('table')}
+              aria-label="Ver como tabela"
+              aria-pressed={view === 'table'}
+              className={`p-2 rounded transition ${view === 'table' ? 'bg-brass-strong text-on-accent' : 'text-ink-muted hover:text-ink'}`}
+            >
+              <List size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetView('grid')}
+              aria-label="Ver como grade de capas"
+              aria-pressed={view === 'grid'}
+              className={`p-2 rounded transition ${view === 'grid' ? 'bg-brass-strong text-on-accent' : 'text-ink-muted hover:text-ink'}`}
+            >
+              <LayoutGrid size={16} />
+            </button>
+          </div>
         </div>
 
         {filtersOpen && (
@@ -389,10 +427,13 @@ export default function BooksPage() {
           </div>
         )}
 
-        <p className="md:hidden text-xs text-ink-muted mb-2">
-          ← Arraste a tabela para o lado para ver status, empréstimo e ações →
-        </p>
+        {view === 'table' && (
+          <p className="md:hidden text-xs text-ink-muted mb-2">
+            ← Arraste a tabela para o lado para ver status, empréstimo e ações →
+          </p>
+        )}
 
+        {view === 'table' ? (
         <div className="bg-paper-card rounded-lg overflow-x-auto border border-border">
           <table className="w-full text-sm min-w-[820px]">
             <thead>
@@ -546,6 +587,59 @@ export default function BooksPage() {
             </tbody>
           </table>
         </div>
+        ) : loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="rounded-lg border border-border bg-paper-card p-2">
+                <div className="aspect-[2/3] rounded bg-tan animate-pulse mb-2" />
+                <div className="h-3 w-4/5 rounded bg-tan animate-pulse mb-1" />
+                <div className="h-3 w-3/5 rounded bg-tan animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : books.length === 0 ? (
+          <EmptyState icon={SearchX} message="Nenhum livro encontrado." />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {books.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={(e) => { lastTriggerRef.current = e.currentTarget; setEditingBook(b); }}
+                className="text-left rounded-lg border border-border bg-paper-card p-2 hover:border-brass transition"
+              >
+                <div className="relative aspect-[2/3] rounded overflow-hidden bg-tan mb-2">
+                  {b.cover_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={b.cover_url} alt={b.title} className="w-full h-full object-cover" />
+                  )}
+                  {b.favorite && (
+                    <Star
+                      size={14}
+                      fill="currentColor"
+                      aria-label="Favorito"
+                      className="absolute top-1.5 right-1.5 text-brass-strong drop-shadow"
+                    />
+                  )}
+                  <span
+                    className={`absolute bottom-1.5 left-1.5 text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded border ${STATUS_CLASSES[b.reading_status]}`}
+                  >
+                    {STATUS_LABEL[b.reading_status]}
+                  </span>
+                </div>
+                <p className="text-xs font-medium text-ink line-clamp-2 leading-snug">{b.title}</p>
+                <p className="text-[11px] text-ink-muted line-clamp-1">{b.author ?? '—'}</p>
+                {b.rating ? (
+                  <span className="inline-flex gap-0.5 mt-1 text-brass-strong" aria-label={`${b.rating} de 5 estrelas`}>
+                    {[1, 2, 3, 4, 5].slice(0, b.rating).map((n) => (
+                      <Star key={n} size={10} fill="currentColor" aria-hidden="true" />
+                    ))}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
