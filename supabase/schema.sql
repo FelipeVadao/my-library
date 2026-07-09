@@ -370,3 +370,59 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_analytics_detail(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_analytics_detail(uuid) TO authenticated;
+
+-- =========================================================
+-- RAG do assistente de IA: embedding semântico por livro (título + autor +
+-- gênero + sinopse), índice HNSW por distância de cosseno, e busca por
+-- similaridade via RPC. Extensão pgvector no schema "extensions" (convenção
+-- recomendada pela Supabase), por isso o search_path de match_books inclui
+-- "extensions" além de "public, pg_temp".
+-- =========================================================
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
+
+ALTER TABLE public.books
+  ADD COLUMN IF NOT EXISTS embedding extensions.vector(768);
+
+CREATE INDEX IF NOT EXISTS books_embedding_hnsw_idx
+  ON public.books
+  USING hnsw (embedding extensions.vector_cosine_ops);
+
+CREATE INDEX IF NOT EXISTS books_embedding_null_idx
+  ON public.books (operator_id)
+  WHERE embedding IS NULL;
+
+CREATE OR REPLACE FUNCTION public.match_books(
+  p_operator_id uuid,
+  p_query_embedding extensions.vector(768),
+  p_match_count int DEFAULT 20
+)
+RETURNS TABLE (
+  id             uuid,
+  title          text,
+  author         text,
+  genre          text,
+  reading_status text,
+  rating         smallint,
+  added_at       timestamptz,
+  finished_at    timestamptz,
+  page_count     integer,
+  favorite       boolean,
+  similarity     float8
+)
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = public, extensions, pg_temp
+AS $$
+  SELECT
+    b.id, b.title, b.author, b.genre, b.reading_status, b.rating,
+    b.added_at, b.finished_at, b.page_count, b.favorite,
+    1 - (b.embedding <=> p_query_embedding) AS similarity
+  FROM public.books b
+  WHERE b.operator_id = p_operator_id AND b.embedding IS NOT NULL
+  ORDER BY b.embedding <=> p_query_embedding
+  LIMIT LEAST(GREATEST(p_match_count, 1), 200)
+$$;
+
+REVOKE ALL ON FUNCTION public.match_books(uuid, extensions.vector, int) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.match_books(uuid, extensions.vector, int) TO authenticated;

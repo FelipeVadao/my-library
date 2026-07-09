@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildLibraryContext, type BookContextRow } from './libraryContext';
+import { buildLibraryContext, type BookContextRow, type LibraryStatsSummary } from './libraryContext';
 
 function book(overrides: Partial<BookContextRow> = {}): BookContextRow {
   return {
@@ -14,6 +14,10 @@ function book(overrides: Partial<BookContextRow> = {}): BookContextRow {
     favorite: true,
     ...overrides,
   };
+}
+
+function stats(overrides: Partial<LibraryStatsSummary> = {}): LibraryStatsSummary {
+  return { totalBooks: 10, lidoCount: 4, lendoCount: 2, queroLerCount: 4, readThisYear: 3, ...overrides };
 }
 
 describe('buildLibraryContext', () => {
@@ -73,5 +77,57 @@ describe('buildLibraryContext', () => {
     expect(result).toContain('1. "A"');
     expect(result).toContain('2. "B"');
     expect(result).toContain('3. "C"');
+  });
+
+  describe('stats block', () => {
+    it('is absent when stats is not provided', () => {
+      const result = buildLibraryContext([book()]);
+      expect(result).not.toContain('Estatísticas exatas');
+    });
+
+    it('is present with exact counts when stats is provided', () => {
+      const result = buildLibraryContext([book()], { stats: stats() });
+      expect(result).toContain('Estatísticas exatas');
+      expect(result).toContain('Total de livros: 10');
+      expect(result).toContain('Lidos: 4');
+      expect(result).toContain('Lendo: 2');
+      expect(result).toContain('Quero ler: 4');
+      expect(result).toContain('Lidos este ano: 3');
+    });
+  });
+
+  describe('selectionMode', () => {
+    it('defaults to "recent" wording, byte-identical to omitting the option', () => {
+      const withDefault = buildLibraryContext([book()], { totalCount: 50 });
+      const withExplicitRecent = buildLibraryContext([book()], { totalCount: 50, selectionMode: 'recent' });
+      expect(withDefault).toBe(withExplicitRecent);
+      expect(withDefault).toContain('os mais recentes');
+    });
+
+    it('uses "relevant" wording when selectionMode is "relevant"', () => {
+      const result = buildLibraryContext([book()], { totalCount: 50, selectionMode: 'relevant' });
+      expect(result).toContain('mais RELEVANTES para a pergunta');
+      expect(result).toContain('Biblioteca do usuário — 1 livros mais relevantes para a pergunta (de 50 no total):');
+      expect(result).not.toContain('os mais recentes');
+    });
+
+    it('does not warn in "relevant" mode when nothing was truncated', () => {
+      const result = buildLibraryContext([book()], { totalCount: 1, selectionMode: 'relevant' });
+      expect(result).not.toContain('AVISO');
+    });
+  });
+
+  describe('empty list with non-zero stats (bug fix)', () => {
+    it('does not claim the library is empty when stats says otherwise', () => {
+      const result = buildLibraryContext([], { stats: stats({ totalBooks: 5 }) });
+      expect(result).not.toContain('ainda não tem nenhum livro');
+      expect(result).toContain('Total de livros: 5');
+      expect(result).toContain('lista detalhada de livros não pôde ser carregada');
+    });
+
+    it('still claims the library is empty when stats also says zero', () => {
+      const result = buildLibraryContext([], { stats: stats({ totalBooks: 0 }) });
+      expect(result).toBe('O usuário ainda não tem nenhum livro cadastrado na biblioteca.');
+    });
   });
 });
