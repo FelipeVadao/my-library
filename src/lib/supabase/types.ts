@@ -18,6 +18,11 @@ export type Book = {
   finished_at: string | null;
   loaned_to: string | null;
   loaned_at: string | null;
+  favorite: boolean;
+  started_at: string | null;
+  page_count: number | null;
+  current_page: number | null;
+  language: string | null;
   added_at: string;
   updated_at: string;
 };
