@@ -18,8 +18,11 @@ export interface DashboardMetricsRpc {
 }
 
 export function formatDailyData(raw: { date: string; count: number }[]) {
+  // `date` is a plain YYYY-MM-DD from the RPC (to_char(day, 'YYYY-MM-DD')),
+  // parsed by `new Date()` as UTC midnight — formatting in the local
+  // timezone would roll it back a day west of UTC, so this reads UTC fields.
   return raw.map(({ date, count }) => ({
-    date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+    date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }),
     count,
   }));
 }

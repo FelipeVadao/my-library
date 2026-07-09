@@ -50,7 +50,8 @@ function daysAgoISO(n: number): string {
 
 describe('formatDailyData', () => {
   it('formats raw {date, count} entries as dd/mm pt-BR, preserving order', () => {
-    const format = (d: string) => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const format = (d: string) =>
+      new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
 
     expect(formatDailyData([
       { date: '2026-01-03', count: 2 },

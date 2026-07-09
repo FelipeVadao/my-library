@@ -35,8 +35,12 @@ type EditForm = {
 };
 
 function bookToForm(book: Book): EditForm {
+  // finished_at is stored as UTC midnight (see handleSubmit below) — reading
+  // it back with the local-timezone getFullYear() can roll the year back
+  // one west of UTC, and resaving would then silently corrupt the stored
+  // year. getUTCFullYear() reads the value that was actually written.
   const finishedYear = book.finished_at
-    ? String(new Date(book.finished_at).getFullYear())
+    ? String(new Date(book.finished_at).getUTCFullYear())
     : book.reading_status === 'lido'
       ? String(new Date().getFullYear())
       : '';
