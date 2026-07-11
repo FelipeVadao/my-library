@@ -426,3 +426,36 @@ $$;
 
 REVOKE ALL ON FUNCTION public.match_books(uuid, extensions.vector, int) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.match_books(uuid, extensions.vector, int) TO authenticated;
+
+-- =========================================================
+-- Memória persistente do assistente de IA: histórico único e contínuo por
+-- usuário (sem conversas separadas). CRUD direto, sem RPC. Ordenação por
+-- "seq" (bigserial), não por "created_at": pergunta+resposta são gravadas
+-- numa única instrução INSERT, e o now() do Postgres é o horário de início
+-- da transação (igual pras duas linhas), não um clock por linha — só o
+-- nextval() do bigserial garante ordem estável entre elas.
+-- =========================================================
+CREATE TABLE IF NOT EXISTS public.assistant_messages (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  operator_id  uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  role         text NOT NULL CHECK (role IN ('user','assistant')),
+  content      text NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  seq          bigserial
+);
+
+CREATE INDEX IF NOT EXISTS assistant_messages_operator_seq_idx
+  ON public.assistant_messages (operator_id, seq DESC);
+
+ALTER TABLE public.assistant_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "operador_select_own_assistant_messages" ON public.assistant_messages;
+DROP POLICY IF EXISTS "operador_insert_own_assistant_messages" ON public.assistant_messages;
+DROP POLICY IF EXISTS "operador_delete_own_assistant_messages" ON public.assistant_messages;
+
+CREATE POLICY "operador_select_own_assistant_messages" ON public.assistant_messages
+  FOR SELECT USING (auth.uid() = operator_id);
+CREATE POLICY "operador_insert_own_assistant_messages" ON public.assistant_messages
+  FOR INSERT WITH CHECK (auth.uid() = operator_id);
+CREATE POLICY "operador_delete_own_assistant_messages" ON public.assistant_messages
+  FOR DELETE USING (auth.uid() = operator_id);

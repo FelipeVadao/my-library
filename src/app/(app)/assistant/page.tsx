@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Loader2, Send } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
-import { askLibraryAssistant } from './actions';
+import { askLibraryAssistant, getAssistantHistory, clearAssistantHistory } from './actions';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -17,7 +17,15 @@ export default function AssistantPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [confirmClear, setConfirmClear] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getAssistantHistory()
+      .then((history) => setMessages(history))
+      .finally(() => setHistoryLoading(false));
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -27,13 +35,12 @@ export default function AssistantPage() {
     const question = input.trim();
     if (!question || loading) return;
 
-    const history = messages.filter((m) => !m.isError).map(({ role, content }) => ({ role, content }));
     setMessages((prev) => [...prev, { role: 'user', content: question }, { role: 'assistant', content: THINKING }]);
     setInput('');
     setLoading(true);
 
     try {
-      const result = await askLibraryAssistant(question, history);
+      const result = await askLibraryAssistant(question);
       setMessages((prev) => {
         const next = [...prev];
         next[next.length - 1] = result.error
@@ -55,21 +62,55 @@ export default function AssistantPage() {
     setLoading(false);
   }
 
+  async function handleClearHistory() {
+    setConfirmClear(false);
+    await clearAssistantHistory();
+    setMessages([]);
+  }
+
   return (
     <main className="min-h-screen bg-paper text-ink p-6 flex flex-col">
       <div className="max-w-2xl w-full mx-auto flex flex-col flex-1">
-        <div className="lamp-glow mb-6">
-          <h1 className="font-serif text-2xl font-bold">Melvilinho</h1>
-          <p className="text-ink-muted text-sm mt-1">
-            Pergunte sobre os livros da sua biblioteca — homenagem a Melvil Dewey.
-          </p>
+        <div className="lamp-glow mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-2xl font-bold">Melvilinho</h1>
+            <p className="text-ink-muted text-sm mt-1">
+              Pergunte sobre os livros da sua biblioteca — homenagem a Melvil Dewey.
+            </p>
+          </div>
+          {!historyLoading &&
+            messages.length > 0 &&
+            (!confirmClear ? (
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="shrink-0 bg-tan hover:bg-border text-ink text-sm font-medium px-3 py-2 rounded-md transition"
+              >
+                Apagar conversa
+              </button>
+            ) : (
+              <div className="shrink-0 flex gap-2 items-center">
+                <span className="text-oxblood-bright text-sm">Confirmar?</span>
+                <button
+                  onClick={handleClearHistory}
+                  className="bg-oxblood hover:bg-oxblood-hover text-ink text-sm font-medium px-3 py-2 rounded-md transition"
+                >
+                  Sim
+                </button>
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  className="bg-tan hover:bg-border text-ink text-sm font-medium px-3 py-2 rounded-md transition"
+                >
+                  Não
+                </button>
+              </div>
+            ))}
         </div>
 
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto rounded-lg border border-border bg-paper-card p-4 mb-4 min-h-[50vh] max-h-[60vh]"
         >
-          {messages.length === 0 ? (
+          {historyLoading ? null : messages.length === 0 ? (
             <EmptyState icon={MessageCircle} message="Faça uma pergunta sobre sua biblioteca." />
           ) : (
             <div className="flex flex-col gap-3">

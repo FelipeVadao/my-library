@@ -15,9 +15,62 @@ import { answerLibraryQuestion, type ChatMessage, type LibraryAssistantAnswer } 
 import { buildLibraryTools } from './tools';
 
 const MAX_BOOKS_IN_CONTEXT = 2000; // fallback-path cap, unchanged from before RAG
-const MAX_HISTORY_MESSAGES = 10;
+const MAX_HISTORY_MESSAGES = 10; // sent to the model as conversation context
+const MAX_STORED_MESSAGES = 50; // ~25 turns, fetched for the client to hydrate on mount
 const RAG_TOP_K = 20;
 const MAX_EMBEDDING_BACKFILL_PER_REQUEST = 20;
+
+async function loadRecentMessages(supabase: SupabaseClient, operatorId: string): Promise<ChatMessage[]> {
+  try {
+    // Ordered by "seq", not "created_at": a question+answer pair is written
+    // in a single INSERT, and Postgres's now() is the transaction start time
+    // (identical for both rows), so created_at alone can't break the tie.
+    const { data, error } = await supabase
+      .from('assistant_messages')
+      .select('role, content')
+      .eq('operator_id', operatorId)
+      .order('seq', { ascending: false })
+      .limit(MAX_STORED_MESSAGES);
+    if (error || !data) return [];
+    return (data as ChatMessage[]).reverse();
+  } catch {
+    return [];
+  }
+}
+
+async function saveMessages(supabase: SupabaseClient, operatorId: string, question: string, answer: string): Promise<void> {
+  try {
+    await supabase.from('assistant_messages').insert([
+      { operator_id: operatorId, role: 'user', content: question },
+      { operator_id: operatorId, role: 'assistant', content: answer },
+    ]);
+  } catch {
+    // Best-effort only — the answer was already computed; persistence
+    // failures shouldn't turn a successful reply into an error response.
+  }
+}
+
+// Client hydrates its local message list from this on mount — the server is
+// the source of truth for history now, not client-side useState.
+export async function getAssistantHistory(): Promise<ChatMessage[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  return loadRecentMessages(supabase, user.id);
+}
+
+export async function clearAssistantHistory(): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: 'Não autenticado.' };
+
+  const { error } = await supabase.from('assistant_messages').delete().eq('operator_id', user.id);
+  return { error: error?.message ?? null };
+}
 
 // Best-effort, lazy embedding backfill — no cron/trigger/Edge Function, and
 // none of the 3 existing book-save paths (EditBookModal, scan/page.tsx,
@@ -64,10 +117,7 @@ async function fetchFallbackBooks(supabase: SupabaseClient, operatorId: string) 
 // needs an explicit getUser() call regardless of RLS, purely to obtain
 // user.id as the operatorId buildBooksQuery/RPCs require — RLS still
 // independently enforces the same scoping at the DB layer.
-export async function askLibraryAssistant(
-  question: string,
-  history: ChatMessage[] = []
-): Promise<LibraryAssistantAnswer> {
+export async function askLibraryAssistant(question: string): Promise<LibraryAssistantAnswer> {
   const trimmed = question.trim();
   if (!trimmed) return { answer: null, error: 'Digite uma pergunta.' };
 
@@ -77,10 +127,11 @@ export async function askLibraryAssistant(
   } = await supabase.auth.getUser();
   if (!user) return { answer: null, error: 'Não autenticado.' };
 
-  const [, { data: rpcData }, questionEmbedding] = await Promise.all([
+  const [, { data: rpcData }, questionEmbedding, history] = await Promise.all([
     backfillMissingEmbeddings(supabase, user.id),
     supabase.rpc('get_dashboard_metrics', { p_operator_id: user.id }),
     embedText(trimmed),
+    loadRecentMessages(supabase, user.id),
   ]);
   const metrics = rpcData as DashboardMetricsRpc | null;
   const stats: LibraryStatsSummary | undefined = metrics
@@ -130,5 +181,9 @@ export async function askLibraryAssistant(
   const context = buildLibraryContext(books, { totalCount, stats, selectionMode });
   const tools = buildLibraryTools(supabase, user.id);
 
-  return answerLibraryQuestion(trimmed, context, history.slice(-MAX_HISTORY_MESSAGES), tools);
+  const result = await answerLibraryQuestion(trimmed, context, history.slice(-MAX_HISTORY_MESSAGES), tools);
+  if (!result.error && result.answer) {
+    await saveMessages(supabase, user.id, trimmed, result.answer);
+  }
+  return result;
 }
