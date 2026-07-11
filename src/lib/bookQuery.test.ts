@@ -20,7 +20,7 @@ interface RecordedCall {
 function createFakeSupabase() {
   const calls: RecordedCall[] = [];
   const builder = {} as Record<string, (...args: unknown[]) => unknown>;
-  for (const method of ['select', 'eq', 'or', 'in', 'gte', 'lte', 'order', 'range']) {
+  for (const method of ['select', 'eq', 'or', 'in', 'gte', 'lte', 'order', 'range', 'limit']) {
     builder[method] = (...args: unknown[]) => {
       calls.push({ method, args });
       return builder;
@@ -117,6 +117,45 @@ describe('buildBooksQuery', () => {
     const { client, calls } = createFakeSupabase();
     buildBooksQuery(client, 'op-1', { sort: { field: 'title', direction: 'asc' } });
     expect(calls).toContainEqual({ method: 'order', args: ['title', { ascending: true }] });
+  });
+
+  it('applies a keyset cursor filter (desc) and uses limit() instead of range()', () => {
+    const { client, calls } = createFakeSupabase();
+    buildBooksQuery(client, 'op-1', {
+      limit: 50,
+      cursor: { addedAt: '2024-01-01T00:00:00.000Z', id: 'book-1' },
+    });
+
+    expect(calls).toContainEqual({
+      method: 'or',
+      args: ['added_at.lt.2024-01-01T00:00:00.000Z,and(added_at.eq.2024-01-01T00:00:00.000Z,id.lt.book-1)'],
+    });
+    expect(calls).toContainEqual({ method: 'limit', args: [50] });
+    expect(calls.find((c) => c.method === 'range')).toBeUndefined();
+  });
+
+  it('flips the cursor comparison to gt when the sort direction is ascending', () => {
+    const { client, calls } = createFakeSupabase();
+    buildBooksQuery(client, 'op-1', {
+      sort: { field: 'added_at', direction: 'asc' },
+      limit: 50,
+      cursor: { addedAt: '2024-01-01T00:00:00.000Z', id: 'book-1' },
+    });
+
+    expect(calls).toContainEqual({
+      method: 'or',
+      args: ['added_at.gt.2024-01-01T00:00:00.000Z,and(added_at.eq.2024-01-01T00:00:00.000Z,id.gt.book-1)'],
+    });
+  });
+
+  it('adds an id order() tiebreaker when a cursor is present', () => {
+    const { client, calls } = createFakeSupabase();
+    buildBooksQuery(client, 'op-1', {
+      limit: 50,
+      cursor: { addedAt: '2024-01-01T00:00:00.000Z', id: 'book-1' },
+    });
+
+    expect(calls).toContainEqual({ method: 'order', args: ['id', { ascending: false }] });
   });
 
   it('passes select columns and count option through', () => {

@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getReadingGoal } from '@/app/actions';
 import type { Book } from '@/lib/supabase/types';
@@ -27,8 +29,11 @@ import TopAuthorsList from '@/components/TopAuthorsList';
 import CurrentlyReadingList from '@/components/CurrentlyReadingList';
 import FavoritesShelf from '@/components/FavoritesShelf';
 
-async function getMetrics(userId: string) {
-  const supabase = await createClient();
+// supabase is constructed by the caller, outside any unstable_cache scope —
+// createClient() reads cookies(), which isn't allowed inside a cache scope.
+// On a cache hit this function never runs, so there's no risk of one
+// request's client leaking into another's cached result.
+async function getMetrics(supabase: SupabaseClient, userId: string) {
   const [{ data: rpcData }, { data: currentlyReading }, { data: loaned }, { data: favorites }] = await Promise.all([
     supabase.rpc('get_dashboard_metrics', { p_operator_id: userId }),
     supabase
@@ -83,7 +88,10 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/scan');
 
-  const metrics = await getMetrics(user.id);
+  const getCachedMetrics = unstable_cache(() => getMetrics(supabase, user.id), [user.id, 'dashboard-metrics'], {
+    revalidate: 60,
+  });
+  const metrics = await getCachedMetrics();
   const goal = await getReadingGoal(user.id);
 
   return (

@@ -36,10 +36,15 @@ CREATE TABLE IF NOT EXISTS public.books (
 CREATE INDEX IF NOT EXISTS books_operator_idx      ON public.books (operator_id);
 CREATE INDEX IF NOT EXISTS books_isbn_idx           ON public.books (isbn);
 CREATE INDEX IF NOT EXISTS books_reading_status_idx ON public.books (reading_status);
-CREATE INDEX IF NOT EXISTS books_added_at_idx       ON public.books (added_at DESC);
 CREATE INDEX IF NOT EXISTS books_genre_idx          ON public.books (genre);
 CREATE INDEX IF NOT EXISTS books_loaned_to_idx      ON public.books (loaned_to);
 CREATE INDEX IF NOT EXISTS books_favorite_idx       ON public.books (operator_id) WHERE favorite = true;
+-- Matches the WHERE operator_id = ? ORDER BY added_at DESC, id DESC shape of
+-- both the default /books listing and keyset (cursor) pagination in
+-- bookQuery.ts — supersedes a plain added_at index since every query here
+-- already filters by operator_id first.
+CREATE INDEX IF NOT EXISTS books_operator_added_at_id_idx
+  ON public.books (operator_id, added_at DESC, id DESC);
 
 -- =========================================================
 -- Row Level Security (RLS)

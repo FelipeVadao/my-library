@@ -16,6 +16,8 @@ export interface BookFilter {
   sort?: { field: BookSortField; direction: 'asc' | 'desc' };
   limit?: number;
   offset?: number;
+  /** Keyset cursor for the default sort (added_at desc) — see fetchBooks in books/page.tsx. */
+  cursor?: { addedAt: string; id: string };
 }
 
 export interface BuildBooksQueryOptions {
@@ -61,9 +63,24 @@ export function buildBooksQuery(
   const sort = filter.sort ?? { field: 'added_at' as const, direction: 'desc' as const };
   query = query.order(sort.field, { ascending: sort.direction === 'asc' });
 
+  if (filter.cursor) {
+    // Keyset pagination: added_at alone isn't guaranteed unique, so id is a
+    // tiebreaker. PostgREST has no row-value comparison, hence the
+    // or(a<x, and(a=x, id<y)) shape — the canonical way to express
+    // (added_at, id) < (cursor.addedAt, cursor.id) through .or().
+    query = query.order('id', { ascending: sort.direction === 'asc' });
+    const { addedAt, id } = filter.cursor;
+    const op = sort.direction === 'asc' ? 'gt' : 'lt';
+    query = query.or(`added_at.${op}.${addedAt},and(added_at.eq.${addedAt},id.${op}.${id})`);
+  }
+
   if (filter.limit !== undefined) {
-    const offset = filter.offset ?? 0;
-    query = query.range(offset, offset + filter.limit - 1);
+    if (filter.cursor) {
+      query = query.limit(filter.limit);
+    } else {
+      const offset = filter.offset ?? 0;
+      query = query.range(offset, offset + filter.limit - 1);
+    }
   }
 
   return query;

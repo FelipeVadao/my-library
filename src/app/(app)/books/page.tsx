@@ -13,6 +13,11 @@ import EmptyState from '@/components/EmptyState';
 
 const PAGE_SIZE = 50;
 
+interface Cursor {
+  addedAt: string;
+  id: string;
+}
+
 const STATUS_LABEL: Record<ReadingStatus, string> = {
   quero_ler: 'Quero ler',
   lendo: 'Lendo',
@@ -60,6 +65,7 @@ export default function BooksPage() {
   const [loanBusy, setLoanBusy] = useState<string | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const lastTriggerRef = useRef<HTMLElement | null>(null);
+  const cursorsRef = useRef<(Cursor | undefined)[]>([undefined]);
 
   const [view, setView] = useState<'table' | 'grid'>(() => {
     if (typeof window === 'undefined') return 'table';
@@ -139,19 +145,27 @@ export default function BooksPage() {
   const fetchBooks = useCallback(async () => {
     if (!operatorId) return;
     setLoading(true);
+    const cursor = cursorsRef.current[page];
     const { data, count } = await buildBooksQuery(
       supabase,
       operatorId,
-      { ...filter, limit: PAGE_SIZE, offset: page * PAGE_SIZE },
-      { select: '*', count: 'exact' }
+      { ...filter, limit: PAGE_SIZE, cursor },
+      { select: '*', count: 'exact' } // count segue exato — o cursor só otimiza a busca das linhas, não a contagem; mantém "Página X de Y" igual
     );
-    setBooks((data as unknown as Book[]) ?? []);
+    const rows = (data as unknown as Book[]) ?? [];
+    setBooks(rows);
     setTotal(count ?? 0);
+    // Truncate any downstream cursors — fetchBooks can rerun on the current
+    // page after an edit/delete, which can shift what the next page's
+    // boundary row is, so stale forward cursors can't be trusted.
+    const last = rows[rows.length - 1];
+    cursorsRef.current = cursorsRef.current.slice(0, page + 1);
+    if (last) cursorsRef.current[page + 1] = { addedAt: last.added_at, id: last.id };
     setLoading(false);
   }, [operatorId, filter, page, supabase]);
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
-  useEffect(() => { setPage(0); }, [filter]);
+  useEffect(() => { setPage(0); cursorsRef.current = [undefined]; }, [filter]);
 
   async function handleExport() {
     if (!operatorId) return;

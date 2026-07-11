@@ -1,9 +1,20 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import type { Book, ReadingStatus } from '@/lib/supabase/types';
 
 export type UpdateBookInput = Omit<Book, 'id' | 'operator_id' | 'added_at' | 'updated_at'>;
+
+// Dashboard/analytics cache their RPC results with a short TTL (see
+// unstable_cache in those pages) — this forces an immediate refresh after
+// any Server Action that changes books data. Book creation from /scan is a
+// direct client-side insert (not a Server Action, needed for the offline
+// queue), so it isn't covered here and stays on the TTL alone.
+function revalidateBookViews() {
+  revalidatePath('/');
+  revalidatePath('/analytics');
+}
 
 export async function updateBook(id: string, input: UpdateBookInput): Promise<{ error: string | null }> {
   const title = input.title.trim();
@@ -36,12 +47,14 @@ export async function updateBook(id: string, input: UpdateBookInput): Promise<{ 
       updated_at: new Date().toISOString(),
     })
     .eq('id', id);
+  if (!error) revalidateBookViews();
   return { error: error?.message ?? null };
 }
 
 export async function deleteBook(id: string): Promise<{ error: string | null }> {
   const supabase = await createClient();
   const { error } = await supabase.from('books').delete().eq('id', id);
+  if (!error) revalidateBookViews();
   return { error: error?.message ?? null };
 }
 
@@ -51,6 +64,7 @@ export async function deleteAllBooks(): Promise<{ error: string | null }> {
     .from('books')
     .delete()
     .neq('id', '00000000-0000-0000-0000-000000000000');
+  if (!error) revalidateBookViews();
   return { error: error?.message ?? null };
 }
 
@@ -60,6 +74,7 @@ export async function markBookLoaned(id: string, loanedTo: string): Promise<{ er
     .from('books')
     .update({ loaned_to: loanedTo, loaned_at: new Date().toISOString() })
     .eq('id', id);
+  if (!error) revalidateBookViews();
   return { error: error?.message ?? null };
 }
 
@@ -69,6 +84,7 @@ export async function clearLoan(id: string): Promise<{ error: string | null }> {
     .from('books')
     .update({ loaned_to: null, loaned_at: null })
     .eq('id', id);
+  if (!error) revalidateBookViews();
   return { error: error?.message ?? null };
 }
 
@@ -82,6 +98,7 @@ export async function updateReadingStatus(id: string, status: ReadingStatus): Pr
       updated_at: new Date().toISOString(),
     })
     .eq('id', id);
+  if (!error) revalidateBookViews();
   return { error: error?.message ?? null };
 }
 
@@ -92,6 +109,7 @@ export async function rateBook(id: string, rating: number): Promise<{ error: str
     .from('books')
     .update({ rating: clamped, updated_at: new Date().toISOString() })
     .eq('id', id);
+  if (!error) revalidateBookViews();
   return { error: error?.message ?? null };
 }
 
@@ -101,6 +119,7 @@ export async function toggleBookFavorite(id: string, favorite: boolean): Promise
     .from('books')
     .update({ favorite, updated_at: new Date().toISOString() })
     .eq('id', id);
+  if (!error) revalidateBookViews();
   return { error: error?.message ?? null };
 }
 

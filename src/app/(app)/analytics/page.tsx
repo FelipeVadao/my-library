@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import {
   formatDecadeCounts,
@@ -13,8 +15,9 @@ import BarCountChart from '@/components/BarCountChart';
 import DailyChart from '@/components/DailyChart';
 import TopAuthorsList from '@/components/TopAuthorsList';
 
-async function getAnalytics(userId: string) {
-  const supabase = await createClient();
+// supabase is constructed by the caller, outside any unstable_cache scope —
+// see the matching comment in (app)/page.tsx's getMetrics.
+async function getAnalytics(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase.rpc('get_analytics_detail', { p_operator_id: userId });
   const m = data as AnalyticsDetailRpc;
 
@@ -37,7 +40,10 @@ export default async function AnalyticsPage() {
 
   if (!user) redirect('/scan');
 
-  const metrics = await getAnalytics(user.id);
+  const getCachedAnalytics = unstable_cache(() => getAnalytics(supabase, user.id), [user.id, 'analytics-detail'], {
+    revalidate: 60,
+  });
+  const metrics = await getCachedAnalytics();
 
   return (
     <main className="min-h-screen bg-paper text-ink p-6">
